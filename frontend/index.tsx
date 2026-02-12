@@ -378,16 +378,59 @@ async function OnPopupCreation(popup: any) {
 }
 
 const SettingsContent = () => {
+	setTimeout(TrySetupSettings, 100);
+
 	return (
 		<>
+			<button 
+				onClick={SaveSettings} 
+				title="Save settings"
+				style={{marginTop: "6px", backgroundColor: "#8FFF83", 
+					border: "0px", borderRadius: "2px", width: "300px", cursor: "pointer"}}
+			>Save settings</button>
+
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
 				<h1 style={{ margin: 0 }}>Top Buttons</h1>
-				<button onClick={SpawnTopButtonSettingsElement}>+</button>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnTopButtonSettingsElement} title="Add top button">+</button>
 			</div>
 
 			<div id="top_buttons_settings_handler"></div>
 
 			<div style={{ height: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+
+			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+				<h1 style={{ margin: 0 }}>Right click on game context menu buttons</h1>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnRightClickOnGameContextMenuButtonsSettingsElement} title="Add right click on game context menu button">+</button>
+			</div>
+
+			<div id="right_click_on_game_context_menu_buttons_settings_handler"></div>
+
+			<div style={{ height: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+
+			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+				<h1 style={{ margin: 0 }}>Right click on game context menu buttons in drop down</h1>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnRightClickOnGameContextMenuButtonsDropDownSettingsElement} title="Add right click on game context menu button in drop down">+</button>
+			</div>
+
+			<div id="right_click_on_game_context_menu_buttons_drop_down_settings_handler"></div>
+
+			<div style={{ height: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+
+			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+				<h1 style={{ margin: 0 }}>Game properties menu buttons</h1>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnGamePropertiesMenuButtonsSettingsElement} title="Add game properties menu buttons">+</button>
+			</div>
+
+			<div id="game_properties_menu_buttons_settings_handler"></div>
+			
+			<div style={{ height: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+
+			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+				<h1 style={{ margin: 0 }}>Store supernav buttons</h1>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnStoreSupernavButtonsSettingsElement} title="Add store supernav buttons">+</button>
+			</div>
+
+			<div id="store_supernav_buttons_settings_handler"></div>
 
 			<Field label="News Count" description="Number of news items to display" bottomSeparator="standard">
 			<input
@@ -402,7 +445,39 @@ const SettingsContent = () => {
 	);
 };
 
-function SpawnTopButtonSettingsElement(){
+function TrySetupSettings(){
+	global_object_settings.top_buttons.forEach((app: any, index: number) => {
+		SpawnTopButtonSettingsElement(app);
+	})
+
+	global_object_settings.right_click_on_game_context_menu_buttons.forEach((app: any, index: number) => {
+		SpawnRightClickOnGameContextMenuButtonsSettingsElement(app);
+	})
+	
+	global_object_settings.right_click_on_game_context_menu_buttons_drop_down.items.forEach((app: any, index: number) => {
+		SpawnRightClickOnGameContextMenuButtonsDropDownSettingsElement(app);
+	})
+
+	global_object_settings.game_properties_menu_buttons.forEach((app: any, index: number) => {
+		SpawnGamePropertiesMenuButtonsSettingsElement(app);
+	})
+
+	global_object_settings.store_supernav_buttons.forEach((app: any, index: number) => {
+		SpawnStoreSupernavButtonsSettingsElement(app);
+	})
+}
+
+function SpawnTopButtonSettingsElement(app: any = undefined){
+	if (app.name == undefined){
+		app = {
+			name: "SteamGridDB",
+            show_name: "true",
+            icon: "https://raw.githubusercontent.com/diemonic1/Millennium-apps-buttons/refs/heads/main/PUBLIC_ICONS/steamGridDB.png",
+            show_icon: "true",
+            path_to_app: "https://www.steamgriddb.com/"
+		}
+	}
+
 	const top_buttons_settings_handler = popup_desktop.m_popup.document.getElementById("top_buttons_settings_handler");
 	
 	const newElement = popup_desktop.m_popup.document.createElement('div');
@@ -411,62 +486,403 @@ function SpawnTopButtonSettingsElement(){
 
 	newElement.id = "top_buttons_settings_element_" + id;
 	newElement.innerHTML = `
-		<div>
+		<div class="top_buttons_settings_item">
 			<span>Name</span>
-			<input
-				type="text"
-				id="name"
-				name="name"
-				style={{ width: '60px', padding: '4px 8px' }}
-				required
-			/>
+			<input type="text" name="name" value="${app.name}" style="width:220px;padding:4px 8px" />
 			<br>
+
 			<span>Show name</span>
-			<input
-				type="checkbox"
-				id="show_name"
-				name="show_name"
-				style={{ width: '60px', padding: '4px 8px' }}
-				required
-			/>
+			<input type="checkbox" name="show_name" ${app.show_name === "true" ? "checked" : ""} />
 			<br>
+
 			<span>Icon</span>
-			<input
-				type="text"
-				id="icon"
-				name="icon"
-				style={{ width: '60px', padding: '4px 8px' }}
-				required
-			/>
+			<input type="text" name="icon" value="${app.icon}" style="width:220px;padding:4px 8px" />
 			<br>
+
 			<span>Show icon</span>
-			<input
-				type="checkbox"
-				id="show_icon"
-				name="show_icon"
-				style={{ width: '60px', padding: '4px 8px' }}
-				required
-			/>
+			<input type="checkbox" name="show_icon" ${app.show_icon === "true" ? "checked" : ""} />
 			<br>
+
 			<span>URL</span>
-			<input
-				type="text"
-				id="path_to_app"
-				name="path_to_app"
-				style={{ width: '60px', padding: '4px 8px' }}
-				required
-			/>
-			<button id="` + id + `_deleteButton">delete this button</button>
+			<input type="text" name="path_to_app" value="${app.path_to_app}" style="width:220px;padding:4px 8px" />
+			<br>
+			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
 		</div>
 		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
 	`;
 
 	top_buttons_settings_handler.appendChild(newElement);
 
-	popup_desktop.m_popup.document.getElementById("top_buttons_settings_handler")
+	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
 		.addEventListener('click', function (event) {
-				DeleteObject(id + "_deleteButton");
+				DeleteObject("top_buttons_settings_element_" + id);
 			});
+}
+
+function SpawnRightClickOnGameContextMenuButtonsSettingsElement(app: any = undefined){
+	if (app.name == undefined){
+		app = {
+			name: "SteamGridDB",
+            format_game_name: "true",
+			add_arrow_icon: "true",
+            path_to_app: "https://www.steamgriddb.com/"
+		}
+	}
+
+	const right_click_on_game_context_menu_buttons_settings_handler = popup_desktop.m_popup.document.getElementById("right_click_on_game_context_menu_buttons_settings_handler");
+	
+	const newElement = popup_desktop.m_popup.document.createElement('div');
+
+	const id = generateId();
+
+	newElement.id = "right_click_on_game_context_menu_buttons_settings_element_" + id;
+	newElement.innerHTML = `
+		<div class="right_click_on_game_context_menu_buttons_settings_item">
+			<span>Name</span>
+			<input
+				type="text"
+				name="name"
+				value="` + app.name + `"
+				style="width: 220px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<span>Format game name</span>
+			<input
+				type="checkbox"
+				name="format_game_name"
+				${app.format_game_name === "true" ? "checked" : ""}
+				style="width: 40px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<span>Add arrow icon</span>
+			<input
+				type="checkbox"
+				name="add_arrow_icon"
+				${app.add_arrow_icon === "true" ? "checked" : ""}
+				style="width: 40px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<span>URL</span>
+			<input
+				type="text"
+				name="path_to_app"
+				value="` + app.path_to_app + `"
+				style="width: 220px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
+		</div>
+		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
+	`;
+
+	right_click_on_game_context_menu_buttons_settings_handler.appendChild(newElement);
+
+	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
+		.addEventListener('click', function (event) {
+				DeleteObject("right_click_on_game_context_menu_buttons_settings_element_" + id);
+			});
+}
+
+function SpawnRightClickOnGameContextMenuButtonsDropDownSettingsElement(app: any = undefined){
+	if (app.name == undefined){
+		app = {
+			name: "SteamGridDB",
+            format_game_name: "true",
+			add_arrow_icon: "true",
+            path_to_app: "https://www.steamgriddb.com/"
+		}
+	}
+
+	const right_click_on_game_context_menu_buttons_drop_down_settings_handler = popup_desktop.m_popup.document.getElementById("right_click_on_game_context_menu_buttons_drop_down_settings_handler");
+	
+	const newElement = popup_desktop.m_popup.document.createElement('div');
+
+	const id = generateId();
+
+	newElement.id = "right_click_on_game_context_menu_buttons_drop_down_settings_element_" + id;
+	newElement.innerHTML = `
+		<div class="right_click_on_game_context_menu_buttons_drop_down_settings_item">
+			<span>Name</span>
+			<input
+				type="text"
+				name="name"
+				value="` + app.name + `"
+				style="width: 220px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<span>Format game name</span>
+			<input
+				type="checkbox"
+				name="format_game_name"
+				${app.format_game_name === "true" ? "checked" : ""}
+				style="width: 40px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<span>Add arrow icon</span>
+			<input
+				type="checkbox"
+				name="add_arrow_icon"
+				${app.add_arrow_icon === "true" ? "checked" : ""}
+				style="width: 40px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<span>URL</span>
+			<input
+				type="text"
+				name="path_to_app"
+				value="` + app.path_to_app + `"
+				style="width: 220px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
+		</div>
+		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
+	`;
+
+	right_click_on_game_context_menu_buttons_drop_down_settings_handler.appendChild(newElement);
+
+	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
+		.addEventListener('click', function (event) {
+				DeleteObject("right_click_on_game_context_menu_buttons_drop_down_settings_element_" + id);
+			});
+}
+
+function SpawnGamePropertiesMenuButtonsSettingsElement(app: any = undefined){
+	if (app.name == undefined){
+		app = {
+			name: "SteamGridDB",
+            format_game_name: "true",
+			add_arrow_icon: "true",
+            path_to_app: "https://www.steamgriddb.com/"
+		}
+	}
+
+	const game_properties_menu_buttons_settings_handler = popup_desktop.m_popup.document.getElementById("game_properties_menu_buttons_settings_handler");
+	
+	const newElement = popup_desktop.m_popup.document.createElement('div');
+
+	const id = generateId();
+
+	newElement.id = "game_properties_menu_buttons_settings_element_" + id;
+	newElement.innerHTML = `
+		<div class="game_properties_menu_buttons_settings_item">
+			<span>Name</span>
+			<input
+				type="text"
+				name="name"
+				value="` + app.name + `"
+				style="width: 220px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<span>Format game name</span>
+			<input
+				type="checkbox"
+				name="format_game_name"
+				${app.format_game_name === "true" ? "checked" : ""}
+				style="width: 40px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<span>Add arrow icon</span>
+			<input
+				type="checkbox"
+				name="add_arrow_icon"
+				${app.add_arrow_icon === "true" ? "checked" : ""}
+				style="width: 40px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<span>URL</span>
+			<input
+				type="text"
+				name="path_to_app"
+				value="` + app.path_to_app + `"
+				style="width: 220px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
+		</div>
+		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
+	`;
+
+	game_properties_menu_buttons_settings_handler.appendChild(newElement);
+
+	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
+		.addEventListener('click', function (event) {
+				DeleteObject("game_properties_menu_buttons_settings_element_" + id);
+			});
+}
+
+function SpawnStoreSupernavButtonsSettingsElement(app: any = undefined){
+	if (app.name == undefined){
+		app = {
+			name: "SteamGridDB",
+			add_arrow_icon: "true",
+            path_to_app: "https://www.steamgriddb.com/"
+		}
+	}
+
+	const store_supernav_buttons_settings_handler = popup_desktop.m_popup.document.getElementById("store_supernav_buttons_settings_handler");
+	
+	const newElement = popup_desktop.m_popup.document.createElement('div');
+
+	const id = generateId();
+
+	newElement.id = "store_supernav_buttons_settings_element_" + id;
+	newElement.innerHTML = `
+		<div class="store_supernav_buttons_settings_item">
+			<span>Name</span>
+			<input
+				type="text"
+				name="name"
+				value="` + app.name + `"
+				style="width: 220px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<span>Add arrow icon</span>
+			<input
+				type="checkbox"
+				name="add_arrow_icon"
+				${app.add_arrow_icon === "true" ? "checked" : ""}
+				style="width: 40px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<span>URL</span>
+			<input
+				type="text"
+				name="path_to_app"
+				value="` + app.path_to_app + `"
+				style="width: 220px; padding: 4px 8px"
+				required
+			/>
+			<br>
+			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
+		</div>
+		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
+	`;
+
+	store_supernav_buttons_settings_handler.appendChild(newElement);
+
+	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
+		.addEventListener('click', function (event) {
+				DeleteObject("store_supernav_buttons_settings_element_" + id);
+			});
+}
+
+function SaveSettings(){
+	SyncLog("Save Settings");
+
+    let result = {};
+
+	let handler = popup_desktop.m_popup.document.getElementById("top_buttons_settings_handler");
+    let items = handler.querySelectorAll(".top_buttons_settings_item");
+
+    let result_top_buttons = [];
+
+    items.forEach(item => {
+        const obj = {
+            name: item.querySelector('[name="name"]').value,
+            show_name: item.querySelector('[name="show_name"]').checked.toString(),
+            icon: item.querySelector('[name="icon"]').value,
+            show_icon: item.querySelector('[name="show_icon"]').checked.toString(),
+            path_to_app: item.querySelector('[name="path_to_app"]').value
+        };
+
+        result_top_buttons.push(obj);
+    });
+
+	result["top_buttons"] = result_top_buttons;
+
+	handler = popup_desktop.m_popup.document.getElementById("right_click_on_game_context_menu_buttons_settings_handler");
+    items = handler.querySelectorAll(".right_click_on_game_context_menu_buttons_settings_item");
+
+    let result_right_click_on_game_context_menu_buttons = [];
+
+    items.forEach(item => {
+        const obj = {
+            name: item.querySelector('[name="name"]').value,
+            format_game_name: item.querySelector('[name="format_game_name"]').checked.toString(),
+            add_arrow_icon: item.querySelector('[name="add_arrow_icon"]').checked.toString(),
+            path_to_app: item.querySelector('[name="path_to_app"]').value
+        };
+
+        result_right_click_on_game_context_menu_buttons.push(obj);
+    });
+
+	result["right_click_on_game_context_menu_buttons"] = result_right_click_on_game_context_menu_buttons;
+
+	handler = popup_desktop.m_popup.document.getElementById("right_click_on_game_context_menu_buttons_drop_down_settings_handler");
+    items = handler.querySelectorAll(".right_click_on_game_context_menu_buttons_drop_down_settings_item");
+
+    let result_right_click_on_game_context_menu_buttons_drop_down = [];
+
+    items.forEach(item => {
+        const obj = {
+            name: item.querySelector('[name="name"]').value,
+            format_game_name: item.querySelector('[name="format_game_name"]').checked.toString(),
+            add_arrow_icon: item.querySelector('[name="add_arrow_icon"]').checked.toString(),
+            path_to_app: item.querySelector('[name="path_to_app"]').value
+        };
+
+        result_right_click_on_game_context_menu_buttons_drop_down.push(obj);
+    });
+
+	let current_items = {};
+	current_items["items"] = result_right_click_on_game_context_menu_buttons_drop_down;
+	result["right_click_on_game_context_menu_buttons_drop_down"] = current_items;
+
+	handler = popup_desktop.m_popup.document.getElementById("game_properties_menu_buttons_settings_handler");
+    items = handler.querySelectorAll(".game_properties_menu_buttons_settings_item");
+
+    let result_game_properties_menu_buttons = [];
+
+    items.forEach(item => {
+        const obj = {
+            name: item.querySelector('[name="name"]').value,
+            format_game_name: item.querySelector('[name="format_game_name"]').checked.toString(),
+            add_arrow_icon: item.querySelector('[name="add_arrow_icon"]').checked.toString(),
+            path_to_app: item.querySelector('[name="path_to_app"]').value
+        };
+
+        result_game_properties_menu_buttons.push(obj);
+    });
+
+	result["game_properties_menu_buttons"] = result_game_properties_menu_buttons;
+
+	handler = popup_desktop.m_popup.document.getElementById("store_supernav_buttons_settings_handler");
+    items = handler.querySelectorAll(".store_supernav_buttons_settings_item");
+
+    let result_store_supernav_buttons = [];
+
+    items.forEach(item => {
+        const obj = {
+            name: item.querySelector('[name="name"]').value,
+            add_arrow_icon: item.querySelector('[name="add_arrow_icon"]').checked.toString(),
+            path_to_app: item.querySelector('[name="path_to_app"]').value
+        };
+
+        result_store_supernav_buttons.push(obj);
+    });
+
+	result["store_supernav_buttons"] = result_store_supernav_buttons;
+
+	const jsonString = JSON.stringify(result);
+	SyncLog("Settings Saved");
+	SyncLog(jsonString);
+
+    saveSettings({ ...getSettings(), settings_json: jsonString });
 }
 
 function DeleteObject(id: string){
