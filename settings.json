@@ -1,13 +1,6 @@
 {
     "top_buttons": [
         {
-            "name": "Settings",
-            "show_name": "true",
-            "icon": "https://raw.githubusercontent.com/diemonic1/Millennium-apps-buttons/refs/heads/main/PUBLIC_ICONS/settings.png",
-            "show_icon": "true",
-            "path_to_app": "C:\\PROGRA~2\\Steam\\plugins\\millennium-apps-buttons"
-        },
-        {
             "name": "Steam",
             "show_name": "false",
             "icon": "https://raw.githubusercontent.com/diemonic1/Millennium-apps-buttons/refs/heads/main/PUBLIC_ICONS/steam.png",

@@ -1,9 +1,9 @@
 {
     "$schema": "https://raw.githubusercontent.com/SteamClientHomebrew/Millennium/main/src/sys/plugin-schema.json",
 
-    "name": "Apps-buttons",
-    "common_name": "Apps Buttons",
-    "description": "A plugin for adding custom buttons that allow you to open applications directly from the Steam client",
+    "name": "Custom-buttons",
+    "common_name": "Custom Buttons",
+    "description": "A plugin for adding custom buttons that allow you to open URL directly from the Steam client",
     "version": "1.0.0",
 	"backendType": "lua"
 }

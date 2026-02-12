@@ -1,22 +1,27 @@
 import { Millennium, IconsModule, definePlugin, callable, Field, DialogButton } from '@steambrew/client';
+import { getSettings, saveSettings } from './services/settings';
 
 const WaitForElement = async (sel: string, parent = document) => [...(await Millennium.findElement(parent, sel))][0];
 
 const print_log = callable<[{ text: string }], string>('print_log');
 const print_error = callable<[{ text: string }], string>('print_error');
-const get_settings = callable<[{}], string>('get_settings');
 const get_styleCSS = callable<[{}], string>('get_styleCSS');
-const get_installPath = callable<[{}], string>('get_installPath');
-const call_back_backend = callable<[{ app_path: string }], string>('call_back_backend');
 
 async function call_back(app_path: string){
 	if (app_path.includes("http")){
     	return SteamClient.System.OpenInSystemBrowser(app_path);
 	}
-	else {
-		return await call_back_backend({ app_path: app_path });
-		//return SteamClient.System.OpenLocalDirectoryInSystemExplorer(app_path);
-	}
+}
+
+let __idCounter = 0;
+
+function generateId() {
+    const timestamp = Date.now().toString(36); // время
+    const perf = Math.floor(performance.now() * 1000).toString(36); // микроточность
+    const random = crypto.getRandomValues(new Uint32Array(1))[0].toString(36); // крипто-рандом
+    const counter = (__idCounter++).toString(36); // защита от коллизий в одну мс
+
+    return `${timestamp}-${perf}-${random}-${counter}`;
 }
 
 async function SyncLog(textS: string) {
@@ -36,6 +41,7 @@ window.mouseX = 0;
 window.mouseY = 0;
 
 let global_object_settings = '';
+let popup_desktop = undefined;
 
 //#region Top Buttons
 
@@ -359,23 +365,8 @@ async function SpawnStoreSupernavButtons(popup: any, object_settings: any) {
 async function OnPopupCreation(popup: any) {
 	SyncLog('OnPopupCreation');
 
-	if (global_object_settings == '') {
-		SyncLog('start get_settings');
-
-		const jsonStr = await get_settings({});
-
-		SyncLog('jsonStr: ' + jsonStr);
-
-		try {
-			global_object_settings = JSON.parse(jsonStr);
-			SyncLog('valid json: ' + global_object_settings);
-		} catch (e) {
-			await print_error({ text: 'invalid json: ' + e });
-			return;
-		}
-	}
-
 	if (popup.m_strName === 'SP Desktop_uid0') {
+		popup_desktop = popup;
 		SpawnTopButtons(popup, global_object_settings);
 		SpawnConextMenuButtons(popup, global_object_settings);
 	}
@@ -389,46 +380,109 @@ async function OnPopupCreation(popup: any) {
 const SettingsContent = () => {
 	return (
 		<>
-			<Field
-				label="Instructions"
-				description="You can read how to configure the plugin on the plugin's GitHub page."
-				icon={<IconsModule.Settings />}
-				bottomSeparator="standard"
-				focusable
-			>
-				<DialogButton
-					onClick={() => {
-    					SteamClient.System.OpenInSystemBrowser("https://github.com/diemonic1/Apps-buttons");
-					}}
-				>
-					Open GitHub
-				</DialogButton>
-			</Field>
-			<Field
-				label="File"
-				description="Settings are stored in a file settings.json. Click the button to open the folder it is in"
-				icon={<IconsModule.Settings />}
-				bottomSeparator="standard"
-				focusable
-			>
-				<DialogButton
-					onClick={async () => {
-						const installPath = await get_installPath({});
-						SteamClient.System.OpenLocalDirectoryInSystemExplorer(installPath)
-					}}
-				>
-					Open the folder with the settings file
-				</DialogButton>
+			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+				<h1 style={{ margin: 0 }}>Top Buttons</h1>
+				<button onClick={SpawnTopButtonSettingsElement}>+</button>
+			</div>
+
+			<div id="top_buttons_settings_handler"></div>
+
+			<div style={{ height: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+
+			<Field label="News Count" description="Number of news items to display" bottomSeparator="standard">
+			<input
+				type="number"
+				min={1}
+				max={20}
+				value={10}
+				style={{ width: '60px', padding: '4px 8px' }}
+			/>
 			</Field>
 		</>
 	);
 };
 
+function SpawnTopButtonSettingsElement(){
+	const top_buttons_settings_handler = popup_desktop.m_popup.document.getElementById("top_buttons_settings_handler");
+	
+	const newElement = popup_desktop.m_popup.document.createElement('div');
+
+	const id = generateId();
+
+	newElement.id = "top_buttons_settings_element_" + id;
+	newElement.innerHTML = `
+		<div>
+			<span>Name</span>
+			<input
+				type="text"
+				id="name"
+				name="name"
+				style={{ width: '60px', padding: '4px 8px' }}
+				required
+			/>
+			<br>
+			<span>Show name</span>
+			<input
+				type="checkbox"
+				id="show_name"
+				name="show_name"
+				style={{ width: '60px', padding: '4px 8px' }}
+				required
+			/>
+			<br>
+			<span>Icon</span>
+			<input
+				type="text"
+				id="icon"
+				name="icon"
+				style={{ width: '60px', padding: '4px 8px' }}
+				required
+			/>
+			<br>
+			<span>Show icon</span>
+			<input
+				type="checkbox"
+				id="show_icon"
+				name="show_icon"
+				style={{ width: '60px', padding: '4px 8px' }}
+				required
+			/>
+			<br>
+			<span>URL</span>
+			<input
+				type="text"
+				id="path_to_app"
+				name="path_to_app"
+				style={{ width: '60px', padding: '4px 8px' }}
+				required
+			/>
+			<button id="` + id + `_deleteButton">delete this button</button>
+		</div>
+		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
+	`;
+
+	top_buttons_settings_handler.appendChild(newElement);
+
+	popup_desktop.m_popup.document.getElementById("top_buttons_settings_handler")
+		.addEventListener('click', function (event) {
+				DeleteObject(id + "_deleteButton");
+			});
+}
+
+function DeleteObject(id: string){
+    const element = popup_desktop.m_popup.document.getElementById(id);
+    if (element) {
+        element.remove();
+    }
+}
+
 export default definePlugin(() => {
+	const settings = getSettings();
+	global_object_settings = JSON.parse(settings.settings_json);
 	Millennium.AddWindowCreateHook(OnPopupCreation);
 
 	return {
-		title: 'Apps Buttons',
+		title: 'Custom Buttons',
 		icon: <IconsModule.Settings />,
 		content: <SettingsContent />,
 	};

@@ -1,0 +1,28 @@
+export interface PluginSettings {
+  settings_json: string;
+}
+
+const STORAGE_KEY = 'Custom-buttons-settings';
+
+const DEFAULT_SETTINGS: PluginSettings = {
+  settings_json: '{"top_buttons":[{"name":"Steam","show_name":"false","icon":"https://raw.githubusercontent.com/diemonic1/Millennium-apps-buttons/refs/heads/main/PUBLIC_ICONS/steam.png","show_icon":"true","path_to_app":"https://store.steampowered.com/"},{"name":"SteamDB","show_name":"true","icon":"https://raw.githubusercontent.com/diemonic1/Millennium-apps-buttons/refs/heads/main/PUBLIC_ICONS/steamDB.png","show_icon":"true","path_to_app":"https://steamdb.info/"},{"name":"SteamGridDB","show_name":"true","icon":"https://raw.githubusercontent.com/diemonic1/Millennium-apps-buttons/refs/heads/main/PUBLIC_ICONS/steamGridDB.png","show_icon":"false","path_to_app":"https://www.steamgriddb.com/"}],"right_click_on_game_context_menu_buttons":[{"name":"SteamGridDB","format_game_name":"true","add_arrow_icon":"true","path_to_app":"https://www.steamgriddb.com/search/grids?term=%GAME_NAME%"},{"name":"How Long To Beat","format_game_name":"true","add_arrow_icon":"true","path_to_app":"https://howlongtobeat.com/?q=%GAME_NAME%"}],"right_click_on_game_context_menu_buttons_drop_down":{"name":"Other","append_after_element_number":"7","items":[{"name":"SteamGridDB","format_game_name":"true","add_arrow_icon":"true","path_to_app":"https://www.steamgriddb.com/search/grids?term=%GAME_NAME%"},{"name":"How Long To Beat","format_game_name":"true","add_arrow_icon":"false","path_to_app":"https://howlongtobeat.com/?q=%GAME_NAME%"}]},"game_properties_menu_buttons":[{"name":"SteamGridDB","format_game_name":"true","add_arrow_icon":"true","path_to_app":"https://www.steamgriddb.com/search/grids?term=%GAME_NAME%"},{"name":"How Long To Beat","format_game_name":"true","add_arrow_icon":"false","path_to_app":"https://howlongtobeat.com/?q=%GAME_NAME%"}],"store_supernav_buttons":[{"name":"MLNM Plugins","add_arrow_icon":"true","path_to_app":"https://steambrew.app/plugins"},{"name":"MLNM Themes","add_arrow_icon":"true","path_to_app":"https://steambrew.app/themes"},{"name":"Steam Sales","add_arrow_icon":"true","path_to_app":"https://steamdb.info/sales/history/"}]}'
+};
+
+export function getSettings(): PluginSettings {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return { ...DEFAULT_SETTINGS };
+
+    const parsed = JSON.parse(stored);
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsed,
+    };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+export function saveSettings(settings: PluginSettings): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+}
