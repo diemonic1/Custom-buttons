@@ -9,7 +9,7 @@ This plugin allows you to add additional custom buttons to the Steam client, whi
 You can customize, delete, or add absolutely all buttons in each section as you wish.
 
 For button sections marked with * sign, the %GAME_NAME% parameter can be used in the button name and URL. It will be replaced to the name of the game for which the button was called. For example:
-https://www.google.com/search?q=%GAME_NAME% → https://www.google.com/search?q=Subnautica'
+https://www.google.com/search?q=%GAME_NAME% → https://www.google.com/search?q=Subnautica
 
 # Right click on game context menu buttons *
 <img src="https://github.com/user-attachments/assets/68cbf1a3-1f9f-4a98-8f25-c221c0a187dc" />
