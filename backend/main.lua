@@ -1,27 +1,7 @@
 local logger = require("logger")
 local millennium = require("millennium")
-local utils = require("utils")
-
--- ====== STATE ======
-
-local styleCSS = ""
-
--- ====== read_file ======
-
-local function read_file(path)
-    local content, err = utils.read_file(path)
-    return content
-end
 
 -- ====== BACKEND API ======
-
-function get_styleCSS()
-    return tostring(styleCSS)
-end
-
-function get_installPath()
-    return tostring(string.gsub(utils.get_backend_path(), "\\backend", ""))
-end
 
 function print_log(text)
     logger:info("[Custom-buttons] " .. tostring(text));
@@ -40,20 +20,6 @@ local function on_load()
     logger:info("Custom Buttons plugin loaded with Millennium version " .. millennium.version())
 
     logger:info("Plugin base dir: " .. millennium.get_install_path())
-
-    local install_path = get_installPath()
-    logger:info("install path: " .. install_path)
-
-    local TopButtonsStyle_path = install_path .. "/TopButtonsStyle.css"
-    logger:info("TopButtonsStyle path: " .. TopButtonsStyle_path)
-
-    local content = read_file(TopButtonsStyle_path)
-    if content then
-        styleCSS = content
-        logger:info("TopButtonsStyle loaded: " .. styleCSS)
-    else
-        logger:error("failed to load TopButtonsStyle.css")
-    end
 
     millennium.ready()
 end
