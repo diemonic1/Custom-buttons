@@ -593,7 +593,7 @@ const SettingsContent = () => {
 			<p>CSS style for the top buttons. You can copy it to another editor, modify it as you wish, and paste it back here.</p>
 			<textarea 
 				id="TopButtonsStyleInput"
-				style={{ width: '100%', height: "100px", padding: '4px 8px' }}
+				style={{ width: '94%', minHeight: "100px", padding: '4px 8px', fontSize: '12px' }}
 			>
 			</textarea>
 		</>
@@ -1142,6 +1142,7 @@ function DeleteObject(id: string){
 export default definePlugin(() => {
 	const settings = getSettings();
 	global_object_settings = JSON.parse(settings.settings_json);
+
 	Millennium.AddWindowCreateHook(OnPopupCreation);
 
 	return {
