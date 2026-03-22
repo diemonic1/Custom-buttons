@@ -204,174 +204,182 @@ function areTopButtonsAlive(popup: any): boolean {
 
 //#endregion
 
-//#region SpawnConextMenuButtons
+//#region SpawnContextMenuButtons
 
-async function SpawnConextMenuButtons(popup: any) {
-	if (!popup) return;
-
-	if (global_object_settings.right_click_on_game_context_menu_buttons.length <= 0 && global_object_settings.right_click_on_game_context_menu_buttons_drop_down.items.length <= 0) return;
+function SpawnContextMenuButtons(popup: any, node: any, lastClickedElement: string) {
+	if (global_object_settings.right_click_on_game_context_menu_buttons.length <= 0 
+		&& global_object_settings.right_click_on_game_context_menu_buttons_drop_down.items.length <= 0) 
+	{
+		return;
+	}
 
 	SyncLog('try to spawn ConextMenu Buttons');
-	const container = popup.m_popup.document.getElementById('popup_target');
 
-	popup.m_popup.document.addEventListener('mousemove', (e) => {
-		window.mouseX = e.clientX;
-		window.mouseY = e.clientY;
-	});
+	// just buttons
+	if (global_object_settings.right_click_on_game_context_menu_buttons.length > 0) {
+		let element = node.children[0].lastElementChild;
 
-	const observer = new MutationObserver((mutationsList) => {
-		for (const mutation of mutationsList) {
-			if (mutation.type === 'childList') {
-				mutation.addedNodes.forEach((node) => {
-					try {
-						let elementPossiblePlayButton = node.children[0].children[0];
+		if (element == null || element == undefined) return;
 
-						if (
-							!elementPossiblePlayButton.className.includes('Play') &&
-							!elementPossiblePlayButton.className.includes('Install') &&
-							!elementPossiblePlayButton.className.includes('Launch') &&
-							!elementPossiblePlayButton.className.includes('Update') &&
-							!elementPossiblePlayButton.className.includes('Cancel') &&
-							!elementPossiblePlayButton.className.includes('Download') &&
-							!elementPossiblePlayButton.className.includes('Pause') &&
-							!elementPossiblePlayButton.className.includes('Resume')
-						) {
-							return;
-						}
+		global_object_settings.right_click_on_game_context_menu_buttons.forEach((app: string) => {
+			const button_name = app.name.replace(
+				GAME_NAME_PARAMETER,
+				app.format_game_name == 'true' ? FormatGameName(lastClickedElement) : lastClickedElement,
+			);
 
-						const draggables = container.querySelectorAll('[draggable="true"]');
+			const app_path_s = app.path_to_app.replace(
+				GAME_NAME_PARAMETER,
+				app.format_game_name == 'true' ? FormatGameName(lastClickedElement) : lastClickedElement,
+			);
 
-						if (!draggables) return;
+			let myButton = element.cloneNode(true);
 
-						const x = window.mouseX;
-						const y = window.mouseY;
+			myButton.textContent = button_name + (app.add_arrow_icon == 'true' ? ' ↗' : '');
 
-						let lastClickedElement = '';
+			myButton.addEventListener('click', async () => {
+				let result = await call_back(app_path_s);
+			});
 
-						for (const el of draggables) {
-							const rect = el.getBoundingClientRect();
-							if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-								SyncLog('element was clicked : ' + el.children[1].innerText);
-								lastClickedElement = el.children[1].innerText;
-							}
-						}
+			node.children[0].appendChild(myButton);
+			SyncLog('added node in ConextMenu: ' + button_name);
+		});
+	}
 
-						if (lastClickedElement == '') return;
+	// buttons in drop down menu
+	if (global_object_settings.right_click_on_game_context_menu_buttons_drop_down.items.length > 0) {
+		let element = node.children[0].children[3];
 
-						// just buttons
-						if (global_object_settings.right_click_on_game_context_menu_buttons.length > 0) {
-							let element = node.children[0].lastElementChild;
+		if (element == null || element == undefined) return;
 
-							if (element == null || element == undefined) return;
+		let myListButton = element.cloneNode(true);
 
-							global_object_settings.right_click_on_game_context_menu_buttons.forEach((app: string) => {
-								const button_name = app.name.replace(
-									GAME_NAME_PARAMETER,
-									app.format_game_name == 'true' ? FormatGameName(lastClickedElement) : lastClickedElement,
-								);
+		let myList = popup.m_popup.document.getElementById('apps_buttons_additional_drop_down_menu');
 
-								const app_path_s = app.path_to_app.replace(
-									GAME_NAME_PARAMETER,
-									app.format_game_name == 'true' ? FormatGameName(lastClickedElement) : lastClickedElement,
-								);
-
-								let myButton = element.cloneNode(true);
-
-								myButton.textContent = button_name + (app.add_arrow_icon == 'true' ? ' ↗' : '');
-
-								myButton.addEventListener('click', async () => {
-									let result = await call_back(app_path_s);
-								});
-
-								node.children[0].appendChild(myButton);
-								SyncLog('added node in ConextMenu');
-							});
-						}
-
-						// buttons in drop down menu
-						if (global_object_settings.right_click_on_game_context_menu_buttons_drop_down.items.length > 0) {
-							let element = node.children[0].children[3];
-
-							if (element == null || element == undefined) return;
-
-							let myListButton = element.cloneNode(true);
-
-							let myList = popup.m_popup.document.getElementById('apps_buttons_additional_drop_down_menu');
-
-							if (myList == null || myList == undefined) {
-								myList = node.cloneNode(true);
-								node.parentNode.appendChild(myList);
-							}
-
-							while (myList.children[0].firstChild) {
-								myList.children[0].removeChild(myList.children[0].firstChild);
-							}
-
-							myListButton.children[0].textContent = global_object_settings.right_click_on_game_context_menu_buttons_drop_down.name;
-
-							const n = Number(global_object_settings.right_click_on_game_context_menu_buttons_drop_down.append_after_element_number);
-
-							const children = node.children[0].children;
-							if (n >= children.length) {
-								node.children[0].appendChild(myListButton);
-							} else {
-								node.children[0].insertBefore(myListButton, children[n]);
-							}
-
-							const rect = myListButton.getBoundingClientRect();
-
-							myListButton.addEventListener('mouseenter', async () => {
-								myList.style = 'visibility: visible; top: ' + rect.top + 'px; left: ' + rect.right + 'px;';
-							});
-
-							myList.addEventListener('mouseenter', async () => {
-								myList.style = 'visibility: visible; top: ' + rect.top + 'px; left: ' + rect.right + 'px;';
-							});
-
-							myListButton.addEventListener('mouseleave', async () => {
-								myList.style = 'visibility: hidden; display: none; top: 0px; left: 0px;';
-							});
-
-							myList.addEventListener('mouseleave', async () => {
-								myList.style = 'visibility: hidden; display: none; top: 0px; left: 0px;';
-							});
-
-							myList.id = 'apps_buttons_additional_drop_down_menu';
-							myList.style = 'visibility: hidden; display: none; top: 0px; left: 0px;';
-
-							global_object_settings.right_click_on_game_context_menu_buttons_drop_down.items.forEach((app: string) => {
-								const button_name = app.name.replace(
-									GAME_NAME_PARAMETER,
-									app.format_game_name == 'true' ? FormatGameName(lastClickedElement) : lastClickedElement,
-								);
-
-								const app_path_s = app.path_to_app.replace(
-									GAME_NAME_PARAMETER,
-									app.format_game_name == 'true' ? FormatGameName(lastClickedElement) : lastClickedElement,
-								);
-
-								let myButton = element.cloneNode(true);
-
-								myButton.textContent = button_name + (app.add_arrow_icon == 'true' ? ' ↗' : '');
-
-								myButton.addEventListener('click', async () => {
-									let result = await call_back(app_path_s);
-								});
-
-								myList.children[0].appendChild(myButton);
-								SyncLog('added node in ConextMenu');
-							});
-						}
-					} catch (error) {}
-				});
-			}
+		if (myList == null || myList == undefined) {
+			myList = node.cloneNode(true);
+			node.parentNode.appendChild(myList);
 		}
-	});
 
-	observer.observe(container, {
-		childList: true,
-		subtree: true,
-	});
+		while (myList.children[0].firstChild) {
+			myList.children[0].removeChild(myList.children[0].firstChild);
+		}
+
+		myListButton.children[0].textContent = global_object_settings.right_click_on_game_context_menu_buttons_drop_down.name;
+
+		const n = Number(global_object_settings.right_click_on_game_context_menu_buttons_drop_down.append_after_element_number);
+
+		const children = node.children[0].children;
+		if (n >= children.length) {
+			node.children[0].appendChild(myListButton);
+		} else {
+			node.children[0].insertBefore(myListButton, children[n]);
+		}
+
+		const rect = myListButton.getBoundingClientRect();
+
+		myListButton.addEventListener('mouseenter', async () => {
+			myList.style = 'visibility: visible; top: ' + rect.top + 'px; left: ' + rect.right + 'px;';
+		});
+
+		myList.addEventListener('mouseenter', async () => {
+			myList.style = 'visibility: visible; top: ' + rect.top + 'px; left: ' + rect.right + 'px;';
+		});
+
+		myListButton.addEventListener('mouseleave', async () => {
+			myList.style = 'visibility: hidden; display: none; top: 0px; left: 0px;';
+		});
+
+		myList.addEventListener('mouseleave', async () => {
+			myList.style = 'visibility: hidden; display: none; top: 0px; left: 0px;';
+		});
+
+		myList.id = 'apps_buttons_additional_drop_down_menu';
+		myList.style = 'visibility: hidden; display: none; top: 0px; left: 0px;';
+
+		global_object_settings.right_click_on_game_context_menu_buttons_drop_down.items.forEach((app: string) => {
+			const button_name = app.name.replace(
+				GAME_NAME_PARAMETER,
+				app.format_game_name == 'true' ? FormatGameName(lastClickedElement) : lastClickedElement,
+			);
+
+			const app_path_s = app.path_to_app.replace(
+				GAME_NAME_PARAMETER,
+				app.format_game_name == 'true' ? FormatGameName(lastClickedElement) : lastClickedElement,
+			);
+
+			let myButton = element.cloneNode(true);
+
+			myButton.textContent = button_name + (app.add_arrow_icon == 'true' ? ' ↗' : '');
+
+			myButton.addEventListener('click', async () => {
+				let result = await call_back(app_path_s);
+			});
+
+			myList.children[0].appendChild(myButton);
+			SyncLog('added node in ConextMenu DropDown: ' + button_name);
+		});
+	}
+}
+
+//#endregion
+
+//#region SpawnAppPageButtons
+
+function SpawnAppPageButtons(elementsToSpawnAppPageButtons: any, lastClickedElement: string) {
+	if (!global_object_settings.app_page_buttons
+		|| global_object_settings.app_page_buttons.length <= 0
+	)
+	{
+		return;
+	}
+
+	SyncLog('try to spawn AppPage Buttons');
+
+	try{
+		elementsToSpawnAppPageButtons.forEach(elementToClone => {
+			global_object_settings.app_page_buttons.forEach((app: string) => {
+
+				const format_game_name = app.format_game_name ? (app.format_game_name == 'true') : ("true");
+
+				const button_name = app.name.replace(
+					GAME_NAME_PARAMETER,
+					format_game_name ? FormatGameName(lastClickedElement) : lastClickedElement,
+				);
+
+				const app_path_s = app.path_to_app.replace(
+					GAME_NAME_PARAMETER,
+					format_game_name ? FormatGameName(lastClickedElement) : lastClickedElement,
+				);
+
+				const parent2 = elementToClone.parentElement.parentElement;
+
+				const clone = parent2.cloneNode(true);
+
+				const target = clone.firstElementChild?.firstElementChild;
+				if (target) {
+					target.remove();
+
+					const img = document.createElement('img');
+					img.src = app.icon;
+					img.style.cssText = 'width:100%; height:100%; object-fit:contain;';
+					clone.firstElementChild.appendChild(img);
+				}
+
+				clone.title = button_name;
+
+				parent2.parentElement.prepend(clone);
+
+				clone.addEventListener('click', async () => {
+					let result = await call_back(app_path_s);
+				});
+
+				SyncLog('added node in app page ' + lastClickedElement + ': ' + button_name);
+			});
+		});
+	}
+	catch (error){
+		SyncLog(error);
+	}
 }
 
 //#endregion
@@ -472,11 +480,113 @@ function areStoreSupernavButtonsAlive(popup: any): boolean {
 
 //#endregion
 
+async function SubscribeOnMutations(popup: any) {
+	Millennium.AddWindowCreateHook?.((context: any) => {
+		if (!context.m_strName?.startsWith('SP ')) 
+			return;
+
+		const doc = context.m_popup?.document;
+
+		if (!doc?.body) 
+			return;
+
+		const popup_target = context.m_popup.document.getElementById('popup_target');
+
+		if (context.m_strName === 'SP Desktop_uid0'
+			&& popup_target != null 
+			&& popup_target != undefined)
+		{
+			popup_target.addEventListener('mousedown', (e) => {
+				try {
+					const x = e.clientX;
+					const y = e.clientY;
+
+					const draggables = popup_target.querySelectorAll('[draggable="true"]');
+
+					for (const el of draggables) {
+						const rect = el.getBoundingClientRect();
+						if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+							window.lastClickedElement = el.children[1].innerText;
+						}
+					}
+				} catch (error) {}
+			});
+		}
+	});
+
+	if (!popup) return;
+
+	const container = popup.m_popup.document.getElementById('popup_target');
+
+	popup.m_popup.document.addEventListener('mousemove', (e) => {
+		window.mouseX = e.clientX;
+		window.mouseY = e.clientY;
+	});
+
+	const observer = new MutationObserver((mutationsList) => {
+		for (const mutation of mutationsList) {
+			if (mutation.type === 'childList') {
+				mutation.addedNodes.forEach((node) => {
+					try {
+						let NeedToAddConextMenuButtons = false;
+						let NeedToAddAppPageButtons = false;
+
+						let elementPossiblePlayButton = node.children[0].children[0];
+
+						let elementsToSpawnAppPageButtons = [];
+
+						if (node
+							&& window.MainWindowBrowserManager?.m_lastLocation?.pathname
+							&& window.MainWindowBrowserManager?.m_lastLocation?.pathname.match(/\/app\/(\d+)/)
+						) {
+							const elements = node.querySelectorAll('.SVGIcon_Settings');
+
+							if (elements.length > 0) {
+								NeedToAddAppPageButtons = true;
+								elementsToSpawnAppPageButtons = elements;
+							}
+						}
+
+						if (
+							elementPossiblePlayButton.className.includes('Play') ||
+							elementPossiblePlayButton.className.includes('Install') ||
+							elementPossiblePlayButton.className.includes('Launch') ||
+							elementPossiblePlayButton.className.includes('Update') ||
+							elementPossiblePlayButton.className.includes('Cancel') ||
+							elementPossiblePlayButton.className.includes('Download') ||
+							elementPossiblePlayButton.className.includes('Pause') ||
+							elementPossiblePlayButton.className.includes('Resume')
+						) {
+							NeedToAddConextMenuButtons = true;
+						}
+
+						if (window.lastClickedElement == '') 
+							return;
+
+						if (NeedToAddAppPageButtons){
+							SpawnAppPageButtons(elementsToSpawnAppPageButtons, window.lastClickedElement);
+						}
+
+						if (NeedToAddConextMenuButtons){
+							SpawnContextMenuButtons(popup, node, window.lastClickedElement);
+						}
+					} catch (error) {}
+				});
+			}
+		}
+	});
+
+	observer.observe(container, {
+		childList: true,
+		subtree: true,
+	});
+}
+
 async function OnPopupCreation(popup: any) {
 	if (popup.m_strName === 'SP Desktop_uid0') {
 		SyncLog('OnPopupCreation SP Desktop_uid0');
 		popup_desktop = popup;
-		SpawnConextMenuButtons(popup_desktop);
+		SubscribeOnMutations(popup_desktop);
 		RespawnTopButtons();
 	}
 	if (popup.m_strTitle === 'Store Supernav') {
@@ -531,7 +641,7 @@ const SettingsContent = () => {
 
 			<div id="right_click_on_game_context_menu_buttons_settings_handler"></div>
 
-			<div style={{ height: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
 
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
 				<h1 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Right click on game context menu buttons in drop down <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h1>
@@ -560,7 +670,7 @@ const SettingsContent = () => {
 
 			<div id="right_click_on_game_context_menu_buttons_drop_down_settings_handler"></div>
 
-			<div style={{ height: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
 
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
 				<h1 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Game properties menu buttons <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h1>
@@ -569,7 +679,7 @@ const SettingsContent = () => {
 
 			<div id="game_properties_menu_buttons_settings_handler"></div>
 			
-			<div style={{ height: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
 
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
 				<h1 style={{ margin: 0 }}>Top Buttons</h1>
@@ -578,7 +688,7 @@ const SettingsContent = () => {
 
 			<div id="top_buttons_settings_handler"></div>
 
-			<div style={{ height: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
 
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
 				<h1 style={{ margin: 0 }}>Store supernav buttons</h1>
@@ -587,7 +697,16 @@ const SettingsContent = () => {
 
 			<div id="store_supernav_buttons_settings_handler"></div>
 
-			<div style={{ height: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+
+			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+				<h1 style={{ margin: 0 }}>App page Buttons</h1>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnAppPageButtonSettingsElement} title="Add app page button">+</button>
+			</div>
+
+			<div id="app_page_buttons_settings_handler"></div>
+
+			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
 
 			<h2 style={{ margin: "0px" }}>Top Buttons style</h2>
 			<p>CSS style for the top buttons. You can copy it to another editor, modify it as you wish, and paste it back here.</p>
@@ -638,6 +757,10 @@ function TrySetupSettings(){
 	global_object_settings.store_supernav_buttons.forEach((app: any, index: number) => {
 		SpawnStoreSupernavButtonsSettingsElement(app);
 	})
+
+	global_object_settings.app_page_buttons.forEach((app: any, index: number) => {
+		SpawnAppPageButtonSettingsElement(app);
+	})
 }
 
 function SpawnTopButtonSettingsElement(app: any = undefined){
@@ -645,7 +768,7 @@ function SpawnTopButtonSettingsElement(app: any = undefined){
 		app = {
 			name: "Steam",
             show_name: "true",
-            icon: "https://raw.githubusercontent.com/diemonic1/Millennium-apps-buttons/refs/heads/main/PUBLIC_ICONS/steam.png",
+            icon: "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONSsteam.png",
             show_icon: "true",
             path_to_app: "https://store.steampowered.com/"
 		}
@@ -994,6 +1117,81 @@ function SpawnStoreSupernavButtonsSettingsElement(app: any = undefined){
 			});
 }
 
+function SpawnAppPageButtonSettingsElement(app: any = undefined){
+	if (app.name == undefined){
+		app = {
+            name: "Nexus Mods",
+            icon: "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONSnexusMods.png",
+            path_to_app: "https://www.nexusmods.com/games?keyword=%GAME_NAME%&sort=downloads"
+		}
+	}
+
+	const app_page_buttons_settings_handler = popup_desktop.m_popup.document.getElementById("app_page_buttons_settings_handler");
+	
+	const newElement = popup_desktop.m_popup.document.createElement('div');
+
+	const id = generateId();
+
+	newElement.id = "app_page_buttons_settings_element_" + id;
+	newElement.innerHTML = `
+		<div class="app_page_buttons_settings_item">
+			<span title="` + BUTTON_NAME_TIP + `">
+				<span>Name</span>
+				<input
+					type="text"
+					name="name"
+					value="` + app.name + `"
+					style="width: 220px; padding: 4px 8px"
+					required
+				/>
+			</span>
+			<br>
+			<span title="` + BUTTON_ICON_TIP + `">
+				<span>Icon</span>
+				<input
+					type="text"
+					name="icon"
+					value="` + app.icon + `"
+					style="width: 220px; padding: 4px 8px"
+					required
+				/>
+			</span>
+			<br>
+			<span title="` + BUTTON_FORMAT_GAME_NAME_TIP + `">
+				<span>Format game name</span>
+				<input
+					type="checkbox"
+					name="format_game_name"
+					${app.format_game_name === "true" ? "checked" : ""}
+					style="width: 40px; padding: 4px 8px"
+					required
+				/>
+			</span>
+			<br>
+			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
+				<span>URL</span>
+				<input
+					type="text"
+					name="path_to_app"
+					value="` + app.path_to_app + `"
+					style="width: 220px; padding: 4px 8px"
+					required
+				/>
+			</span>
+			<br>
+			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
+		</div>
+		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
+	`;
+
+	app_page_buttons_settings_handler.appendChild(newElement);
+
+	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
+		.addEventListener('click', function (event) {
+				DeleteObject("app_page_buttons_settings_element_" + id);
+			});
+}
+
 async function SaveSettings(setInfoMessage: Function){
 	setInfoMessage("");
 
@@ -1106,6 +1304,24 @@ async function SaveSettings(setInfoMessage: Function){
 		});
 
 		result["store_supernav_buttons"] = result_store_supernav_buttons;
+
+		handler = popup_desktop.m_popup.document.getElementById("app_page_buttons_settings_handler");
+		items = handler.querySelectorAll(".app_page_buttons_settings_item");
+
+		let result_app_page_buttons = [];
+
+		items.forEach(item => {
+			const obj = {
+				name: item.querySelector('[name="name"]').value,
+				icon: item.querySelector('[name="icon"]').value,
+				format_game_name: item.querySelector('[name="format_game_name"]').checked.toString(),
+				path_to_app: item.querySelector('[name="path_to_app"]').value
+			};
+
+			result_app_page_buttons.push(obj);
+		});
+
+		result["app_page_buttons"] = result_app_page_buttons;
 
 		element = popup_desktop.m_popup.document.getElementById("TopButtonsStyleInput");
 
