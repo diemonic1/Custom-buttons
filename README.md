@@ -26,5 +26,8 @@ https://www.google.com/search?q=%GAME_NAME% → https://www.google.com/search?q=
 # Store supernav buttons
 <img src="https://github.com/user-attachments/assets/976bf101-73e6-480e-82fc-ed6fbca86f6a" />
 
+# Apps page buttons *
+<img src="https://github.com/user-attachments/assets/532d066e-f18c-4615-afd0-fd2e45d04517" />
+
 ## Prerequisites
 - [Millennium](https://steambrew.app/)
