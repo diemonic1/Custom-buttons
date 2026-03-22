@@ -10,21 +10,21 @@ const DEFAULT_SETTINGS: PluginSettings = {
         {
           "name": "SteamGridDB",
           "show_name": "true",
-          "icon": "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONSsteamGridDB.png",
+          "icon": "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONS/steamGridDB.png",
           "show_icon": "true",
           "path_to_app": "https://www.steamgriddb.com/"
         },
         {
           "name": "SteamDB",
           "show_name": "true",
-          "icon": "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONSsteamDB.png",
+          "icon": "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONS/steamDB.png",
           "show_icon": "true",
           "path_to_app": "https://steamdb.info/"
         },
         {
           "name": "Steam",
           "show_name": "true",
-          "icon": "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONSsteam.png",
+          "icon": "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONS/steam.png",
           "show_icon": "true",
           "path_to_app": "https://store.steampowered.com/"
         }
@@ -95,7 +95,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
       "app_page_buttons": [
         {
           "name": "Nexus Mods",
-          "icon": "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONSnexusMods.png",
+          "icon": "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONS/nexusMods.png",
           "path_to_app": "https://www.nexusmods.com/games?keyword=%GAME_NAME%&sort=downloads"
         }
       ],

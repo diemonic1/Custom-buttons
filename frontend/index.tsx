@@ -768,7 +768,7 @@ function SpawnTopButtonSettingsElement(app: any = undefined){
 		app = {
 			name: "Steam",
             show_name: "true",
-            icon: "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONSsteam.png",
+            icon: "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONS/steam.png",
             show_icon: "true",
             path_to_app: "https://store.steampowered.com/"
 		}
@@ -1121,7 +1121,7 @@ function SpawnAppPageButtonSettingsElement(app: any = undefined){
 	if (app.name == undefined){
 		app = {
             name: "Nexus Mods",
-            icon: "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONSnexusMods.png",
+            icon: "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONS/nexusMods.png",
             path_to_app: "https://www.nexusmods.com/games?keyword=%GAME_NAME%&sort=downloads"
 		}
 	}
