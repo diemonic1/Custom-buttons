@@ -1121,7 +1121,7 @@ function SpawnAppPageButtonSettingsElement(app: any = undefined){
 	if (app.name == undefined){
 		app = {
             name: "Nexus Mods",
-            icon: "https://github.com/diemonic1/Custom-buttons/blob/f781899f078b4aa302ca0742748a915aab50090f/PUBLIC_ICONS/nexusMods.png",
+            icon: "https://github.com/diemonic1/Custom-buttons/blob/bb9d357748c7357c5edc9790ffa212004cb27118/PUBLIC_ICONS/nexusMods.png",
             path_to_app: "https://www.nexusmods.com/games?keyword=%GAME_NAME%&sort=downloads"
 		}
 	}
