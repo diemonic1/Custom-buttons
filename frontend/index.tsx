@@ -700,7 +700,7 @@ const SettingsContent = () => {
 			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
 
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h1 style={{ margin: 0 }}>App page Buttons</h1>
+				<h1 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>App page Buttons <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h1>
 				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnAppPageButtonSettingsElement} title="Add app page button">+</button>
 			</div>
 
