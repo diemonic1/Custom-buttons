@@ -325,11 +325,17 @@ function SpawnContextMenuButtons(popup: any, node: any, lastClickedElement: stri
 
 //#region SpawnAppPageButtons
 
+let spawnedAppPageButtonsCount = 0;
+
 function SpawnAppPageButtons(elementsToSpawnAppPageButtons: any, lastClickedElement: string) {
 	if (!global_object_settings.app_page_buttons
 		|| global_object_settings.app_page_buttons.length <= 0
 	)
 	{
+		return;
+	}
+
+	if (spawnedAppPageButtonsCount >= 2) {
 		return;
 	}
 
@@ -366,6 +372,7 @@ function SpawnAppPageButtons(elementsToSpawnAppPageButtons: any, lastClickedElem
 				}
 
 				clone.title = button_name;
+				clone.id = button_name + '_app_page_button';
 
 				parent2.parentElement.prepend(clone);
 
@@ -373,7 +380,8 @@ function SpawnAppPageButtons(elementsToSpawnAppPageButtons: any, lastClickedElem
 					let result = await call_back(app_path_s);
 				});
 
-				SyncLog('added node in app page ' + lastClickedElement + ': ' + button_name);
+				spawnedAppPageButtonsCount = spawnedAppPageButtonsCount + 1;
+				SyncLog('added node in app page ' + lastClickedElement + ': ' + button_name + ", number: " + spawnedAppPageButtonsCount);
 			});
 		});
 	}
@@ -480,6 +488,8 @@ function areStoreSupernavButtonsAlive(popup: any): boolean {
 
 //#endregion
 
+let lastPage = '';
+
 async function SubscribeOnMutations(popup: any) {
 	Millennium.AddWindowCreateHook?.((context: any) => {
 		if (!context.m_strName?.startsWith('SP ')) 
@@ -546,6 +556,13 @@ async function SubscribeOnMutations(popup: any) {
 								elementsToSpawnAppPageButtons = elements;
 							}
 						}
+
+						if (lastPage != window.MainWindowBrowserManager?.m_lastLocation?.pathname)
+						{
+							spawnedAppPageButtonsCount = 0;
+						}
+
+						lastPage = window.MainWindowBrowserManager?.m_lastLocation?.pathname;
 
 						if (
 							elementPossiblePlayButton.className.includes('Play') ||
