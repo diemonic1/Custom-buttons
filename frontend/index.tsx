@@ -335,7 +335,7 @@ function SpawnAppPageButtons(elementsToSpawnAppPageButtons: any, lastClickedElem
 		return;
 	}
 
-	if (spawnedAppPageButtonsCount >= 2) {
+	if (spawnedAppPageButtonsCount >= global_object_settings.app_page_buttons.length * 2) {
 		return;
 	}
 
