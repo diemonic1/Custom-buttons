@@ -4,7 +4,7 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/diemonic1/Millennium-apps-buttons)
 ![GitHub issues](https://img.shields.io/github/issues/diemonic1/Millennium-apps-buttons)
 
-This plugin allows you to add additional custom buttons to the Steam client, which allow you to open any websites.
+This plugin allows you to add additional custom buttons to the Steam client, which allow you to open any websites or apps on your computer.
 
 You can customize, delete, or add absolutely all buttons in each section as you wish.
 
