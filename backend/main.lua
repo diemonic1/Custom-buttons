@@ -18,7 +18,7 @@ end
 
 function run_command(text)
     logger:info("[Custom-buttons] run command in background: " .. tostring(text));
-    local output, status = utils.exec("start " .. tostring(text))
+    local output, status = utils.exec('start "" "' .. tostring(text) .. '"')
     return "[Custom-buttons] " .. tostring(status);
 end
 
