@@ -4,7 +4,7 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/diemonic1/Millennium-apps-buttons)
 ![GitHub issues](https://img.shields.io/github/issues/diemonic1/Millennium-apps-buttons)
 
-This plugin allows you to add additional custom buttons to the Steam client, which allow you to open any websites or apps on your computer.
+This plugin allows you to add additional custom buttons to the Steam client, which allow you to open any websites or apps on your computer - for example https://howlongtobeat.com/?q=%GAME_NAME% or S:\Programs\Epic Games\Launcher\Engine\Binaries\Win64\EpicGamesLauncher.exe
 
 You can customize, delete, or add absolutely all buttons in each section as you wish.
 
