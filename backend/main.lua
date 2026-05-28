@@ -1,5 +1,6 @@
 local logger = require("logger")
 local millennium = require("millennium")
+local utils = require("utils")
 
 -- ====== BACKEND API ======
 
@@ -14,6 +15,12 @@ function print_error(text)
 end
 
 -- ====== PLUGIN LIFECYCLE ======
+
+function run_command(text)
+    logger:info("[Custom-buttons] run command in background: " .. tostring(text));
+    local output, status = utils.exec("start " .. tostring(text))
+    return "[Custom-buttons] " .. tostring(status);
+end
 
 local function on_load()
     logger:info("Comparing millennium version: " .. millennium.cmp_version(millennium.version(), "2.29.3"))

@@ -6,6 +6,7 @@ const WaitForElement = async (sel: string, parent = document) => [...(await Mill
 
 const print_log = callable<[{ text: string }], string>('print_log');
 const print_error = callable<[{ text: string }], string>('print_error');
+const run_command = callable<[{ text: string }], string>('run_command');
 
 const GAME_NAME_PARAMETER = "%GAME_NAME%";
 const YELLOW_HIGHLIGHT_COLOR = "#ffcc32";
@@ -15,7 +16,7 @@ const BUTTON_NAME_TIP = "The name that will be displayed on the button";
 const BUTTON_SHOW_NAME_TIP = "Should the button's name be shown on it?";
 const BUTTON_ICON_TIP = "URL of the icon that will be displayed on the button";
 const BUTTON_SHOW_ICON_TIP = "Should the button's icon be shown on it?";
-const BUTTON_PATH_TO_APP_TIP = "The URL to open when the button is clicked";
+const BUTTON_PATH_TO_APP_TIP = "The URL or App Path (e.g., https://www.example.com or C:\\Program Files\\App\\app.exe) to open when the button is clicked";
 const BUTTON_FORMAT_GAME_NAME_TIP = "Does the game name need to be formatted when it is inserted into a parameter " + GAME_NAME_PARAMETER + ". Formatting replaces spaces and slashes with + signs, which is convenient for opening URLs in a browser.";
 const BUTTON_ADD_ARROW_ICON_TIP = "Whether to add an arrow icon to the button";
 
@@ -32,8 +33,13 @@ let spawned_top_buttons_to_delete_on_respawn = [];
 let spawned_store_supernav_buttons_to_delete_on_respawn = [];
 
 async function call_back(app_path: string){
-	if (app_path.includes("http")){
+	if (app_path.includes("https://") || app_path.includes("http://")){
+		SyncLog('open web page: ' + app_path);
     	return SteamClient.System.OpenInSystemBrowser(app_path);
+	}
+	else{
+		SyncLog('run command in console: ' + app_path);
+		return await run_command({ text: app_path });
 	}
 }
 
@@ -825,7 +831,7 @@ function SpawnTopButtonSettingsElement(app: any = undefined){
 			<br>
 
 			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL</span>
+				<span>URL or App Path</span>
 				<input type="text" name="path_to_app" value="${app.path_to_app}" style="width:220px;padding:4px 8px" />
 			</span>
 			<br>
@@ -895,7 +901,7 @@ function SpawnRightClickOnGameContextMenuButtonsSettingsElement(app: any = undef
 			</span>
 			<br>
 			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL</span>
+				<span>URL or App Path</span>
 				<input
 					type="text"
 					name="path_to_app"
@@ -971,7 +977,7 @@ function SpawnRightClickOnGameContextMenuButtonsDropDownSettingsElement(app: any
 			</span>
 			<br>
 			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL</span>
+				<span>URL or App Path</span>
 				<input
 					type="text"
 					name="path_to_app"
@@ -1047,7 +1053,7 @@ function SpawnGamePropertiesMenuButtonsSettingsElement(app: any = undefined){
 			</span>
 			<br>
 			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL</span>
+				<span>URL or App Path</span>
 				<input
 					type="text"
 					name="path_to_app"
@@ -1111,7 +1117,7 @@ function SpawnStoreSupernavButtonsSettingsElement(app: any = undefined){
 			</span>
 			<br>
 			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL</span>
+				<span>URL or App Path</span>
 				<input
 					type="text"
 					name="path_to_app"
@@ -1187,7 +1193,7 @@ function SpawnAppPageButtonSettingsElement(app: any = undefined){
 			</span>
 			<br>
 			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL</span>
+				<span>URL or App Path</span>
 				<input
 					type="text"
 					name="path_to_app"
