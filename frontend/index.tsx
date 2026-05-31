@@ -1,4 +1,4 @@
-import { Millennium, IconsModule, definePlugin, callable, Field } from '@steambrew/client';
+import { Millennium, IconsModule, definePlugin, callable, Field, PanelSection, TextField } from '@steambrew/client';
 import { getSettings, saveSettings } from './services/settings';
 import { useState, useEffect } from 'react';
 
@@ -19,6 +19,8 @@ const BUTTON_SHOW_ICON_TIP = "Should the button's icon be shown on it?";
 const BUTTON_PATH_TO_APP_TIP = "The URL or App Path (e.g., https://www.example.com or C:\\Program Files\\App\\app.exe) to open when the button is clicked";
 const BUTTON_FORMAT_GAME_NAME_TIP = "Does the game name need to be formatted when it is inserted into a parameter " + GAME_NAME_PARAMETER + ". Formatting replaces spaces and slashes with + signs, which is convenient for opening URLs in a browser.";
 const BUTTON_ADD_ARROW_ICON_TIP = "Whether to add an arrow icon to the button";
+
+const CONTEXT_MENU_SETTINGS = "Context Menu Settings";
 
 let __idCounter = 0;
 
@@ -657,79 +659,100 @@ const SettingsContent = () => {
 
 			<p>{GAME_NAME_PARAMETER_TIP}</p>
 
+			<br></br>
+			<br></br>
+
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h1 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Right click on game context menu buttons <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h1>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnRightClickOnGameContextMenuButtonsSettingsElement} title="Add right click on game context menu button">+</button>
+				<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Right click on game context menu buttons <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnRightClickOnGameContextMenuButtonsSettingsElement} title="Add right click on game context menu button">+</button>
 			</div>
 
-			<div id="right_click_on_game_context_menu_buttons_settings_handler"></div>
+					<div id="right_click_on_game_context_menu_buttons_settings_handler"></div>
 
 			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
 
+			<br></br>
+			<br></br>
+
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h1 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Right click on game context menu buttons in drop down <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h1>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnRightClickOnGameContextMenuButtonsDropDownSettingsElement} title="Add right click on game context menu button in drop down">+</button>
+				<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Right click on game context menu buttons in drop down <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnRightClickOnGameContextMenuButtonsDropDownSettingsElement} title="Add right click on game context menu button in drop down">+</button>
 			</div>
 
-			<Field label="Name" description="Name for the drop-down menu section" bottomSeparator="standard">
-			<input
-				type="text"
-				id="drop_down_name"
-				style={{ width: '200px', padding: '4px 8px' }}
-				required
-			/>
-			</Field>
+					<div id="right_click_on_game_context_menu_buttons_drop_down_settings_handler"></div>
 
-			<Field label="Append after" description="After which element should the menu be inserted" bottomSeparator="standard">
-			<input
-				type="number"
-				id="drop_down_append_after"
-				min={1}
-				max={7}
-				style={{ width: '60px', padding: '4px 8px' }}
-				required
-			/>
-			</Field>
-
-			<div id="right_click_on_game_context_menu_buttons_drop_down_settings_handler"></div>
+					<PanelSection 
+						title={CONTEXT_MENU_SETTINGS}
+					>
+						<div id="drop_down_name">
+							<TextField
+								label="Name"
+								description="Name for the drop-down menu section"
+							/>
+						</div>
+						<div id="drop_down_append_after">
+							<TextField
+								label="Append after"
+								description="After which element should the menu be inserted"
+								mustBeNumeric={true}
+								rangeMin={1}
+								rangeMax={7}
+							/>
+						</div>
+					</PanelSection>
 
 			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
 
+			<br></br>
+			<br></br>
+			
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h1 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Game properties menu buttons <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h1>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnGamePropertiesMenuButtonsSettingsElement} title="Add game properties menu buttons">+</button>
+				<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Game properties menu buttons <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnGamePropertiesMenuButtonsSettingsElement} title="Add game properties menu buttons">+</button>
 			</div>
 
-			<div id="game_properties_menu_buttons_settings_handler"></div>
+					<div id="game_properties_menu_buttons_settings_handler"></div>
 			
 			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
 
+			<br></br>
+			<br></br>
+			
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h1 style={{ margin: 0 }}>Top Buttons</h1>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnTopButtonSettingsElement} title="Add top button">+</button>
+				<h3 style={{ margin: 0 }}>Top Buttons</h3>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnTopButtonSettingsElement} title="Add top button">+</button>
 			</div>
 
-			<div id="top_buttons_settings_handler"></div>
+					<div id="top_buttons_settings_handler"></div>
 
 			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
 
+			<br></br>
+			<br></br>
+			
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h1 style={{ margin: 0 }}>Store supernav buttons</h1>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnStoreSupernavButtonsSettingsElement} title="Add store supernav buttons">+</button>
+				<h3 style={{ margin: 0 }}>Store supernav buttons</h3>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnStoreSupernavButtonsSettingsElement} title="Add store supernav buttons">+</button>
 			</div>
 
-			<div id="store_supernav_buttons_settings_handler"></div>
+					<div id="store_supernav_buttons_settings_handler"></div>
 
 			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
 
+			<br></br>
+			<br></br>
+			
 			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h1 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>App page Buttons <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h1>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4" }} onClick={SpawnAppPageButtonSettingsElement} title="Add app page button">+</button>
+				<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>App page Buttons <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnAppPageButtonSettingsElement} title="Add app page button">+</button>
 			</div>
 
-			<div id="app_page_buttons_settings_handler"></div>
+					<div id="app_page_buttons_settings_handler"></div>
 
 			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+
+			<br></br>
+			<br></br>
 
 			<h2 style={{ margin: "0px" }}>Top Buttons style</h2>
 			<p>CSS style for the top buttons. You can copy it to another editor, modify it as you wish, and paste it back here.</p>
@@ -751,13 +774,13 @@ function TrySetupSettings(){
 		SpawnRightClickOnGameContextMenuButtonsSettingsElement(app);
 	})
 	
-	let element = popup_desktop.m_popup.document.getElementById("drop_down_name");
+	let element = popup_desktop.m_popup.document.getElementById("drop_down_name").querySelector("input");
 
 	if (element) {
 		element.value = global_object_settings.right_click_on_game_context_menu_buttons_drop_down.name;
 	}
 
-	element = popup_desktop.m_popup.document.getElementById("drop_down_append_after");
+	element = popup_desktop.m_popup.document.getElementById("drop_down_append_after").querySelector("input");
 
 	if (element) {
 		element.value = global_object_settings.right_click_on_game_context_menu_buttons_drop_down.append_after_element_number;
@@ -786,6 +809,13 @@ function TrySetupSettings(){
 	})
 }
 
+const buttonBackgroundStyle = `
+		background-color: #21282f;
+		padding: 7px;
+		border-radius: 8px;
+		margin-bottom: 10px;
+	`;
+
 function SpawnTopButtonSettingsElement(app: any = undefined){
 	if (app.name == undefined){
 		app = {
@@ -802,6 +832,8 @@ function SpawnTopButtonSettingsElement(app: any = undefined){
 	const newElement = popup_desktop.m_popup.document.createElement('div');
 
 	const id = generateId();
+
+	newElement.style = buttonBackgroundStyle;
 
 	newElement.id = "top_buttons_settings_element_" + id;
 	newElement.innerHTML = `
@@ -837,7 +869,6 @@ function SpawnTopButtonSettingsElement(app: any = undefined){
 			<br>
 			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
 		</div>
-		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
 	`;
 
 	top_buttons_settings_handler.appendChild(newElement);
@@ -863,6 +894,8 @@ function SpawnRightClickOnGameContextMenuButtonsSettingsElement(app: any = undef
 	const newElement = popup_desktop.m_popup.document.createElement('div');
 
 	const id = generateId();
+
+	newElement.style = buttonBackgroundStyle;
 
 	newElement.id = "right_click_on_game_context_menu_buttons_settings_element_" + id;
 	newElement.innerHTML = `
@@ -913,7 +946,6 @@ function SpawnRightClickOnGameContextMenuButtonsSettingsElement(app: any = undef
 			<br>
 			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
 		</div>
-		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
 	`;
 
 	right_click_on_game_context_menu_buttons_settings_handler.appendChild(newElement);
@@ -939,6 +971,8 @@ function SpawnRightClickOnGameContextMenuButtonsDropDownSettingsElement(app: any
 	const newElement = popup_desktop.m_popup.document.createElement('div');
 
 	const id = generateId();
+
+	newElement.style = buttonBackgroundStyle;
 
 	newElement.id = "right_click_on_game_context_menu_buttons_drop_down_settings_element_" + id;
 	newElement.innerHTML = `
@@ -989,7 +1023,6 @@ function SpawnRightClickOnGameContextMenuButtonsDropDownSettingsElement(app: any
 			<br>
 			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
 		</div>
-		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
 	`;
 
 	right_click_on_game_context_menu_buttons_drop_down_settings_handler.appendChild(newElement);
@@ -1015,6 +1048,8 @@ function SpawnGamePropertiesMenuButtonsSettingsElement(app: any = undefined){
 	const newElement = popup_desktop.m_popup.document.createElement('div');
 
 	const id = generateId();
+
+	newElement.style = buttonBackgroundStyle;
 
 	newElement.id = "game_properties_menu_buttons_settings_element_" + id;
 	newElement.innerHTML = `
@@ -1065,7 +1100,6 @@ function SpawnGamePropertiesMenuButtonsSettingsElement(app: any = undefined){
 			<br>
 			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
 		</div>
-		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
 	`;
 
 	game_properties_menu_buttons_settings_handler.appendChild(newElement);
@@ -1090,6 +1124,8 @@ function SpawnStoreSupernavButtonsSettingsElement(app: any = undefined){
 	const newElement = popup_desktop.m_popup.document.createElement('div');
 
 	const id = generateId();
+
+	newElement.style = buttonBackgroundStyle;
 
 	newElement.id = "store_supernav_buttons_settings_element_" + id;
 	newElement.innerHTML = `
@@ -1129,7 +1165,6 @@ function SpawnStoreSupernavButtonsSettingsElement(app: any = undefined){
 			<br>
 			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
 		</div>
-		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
 	`;
 
 	store_supernav_buttons_settings_handler.appendChild(newElement);
@@ -1155,6 +1190,8 @@ function SpawnAppPageButtonSettingsElement(app: any = undefined){
 	const newElement = popup_desktop.m_popup.document.createElement('div');
 
 	const id = generateId();
+
+	newElement.style = buttonBackgroundStyle;
 
 	newElement.id = "app_page_buttons_settings_element_" + id;
 	newElement.innerHTML = `
@@ -1205,7 +1242,6 @@ function SpawnAppPageButtonSettingsElement(app: any = undefined){
 			<br>
 			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
 		</div>
-		<div style="height: 3px; background-color: #4a545d; margin: 8px 0px; border-radius: 5px;"/>
 	`;
 
 	app_page_buttons_settings_handler.appendChild(newElement);
@@ -1280,13 +1316,13 @@ async function SaveSettings(setInfoMessage: Function){
 		let current_items = {};
 		current_items["items"] = result_right_click_on_game_context_menu_buttons_drop_down;
 
-		let element = popup_desktop.m_popup.document.getElementById("drop_down_name");
+		let element = popup_desktop.m_popup.document.getElementById("drop_down_name").querySelector("input");
 
 		if (element) {
 			current_items["name"] = element.value.toString();
 		}
 
-		element = popup_desktop.m_popup.document.getElementById("drop_down_append_after");
+		element = popup_desktop.m_popup.document.getElementById("drop_down_append_after").querySelector("input");
 
 		if (element) {
 			current_items["append_after_element_number"] = element.value.toString();
