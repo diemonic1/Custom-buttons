@@ -1,4 +1,4 @@
-import { Millennium, IconsModule, definePlugin, callable, Field, PanelSection, TextField } from '@steambrew/client';
+import { Millennium, IconsModule, definePlugin, callable, PanelSection, TextField, Toggle, Field } from '@steambrew/client';
 import { getSettings, saveSettings } from './services/settings';
 import { useState, useEffect } from 'react';
 
@@ -20,7 +20,7 @@ const BUTTON_PATH_TO_APP_TIP = "The URL or App Path (e.g., https://www.example.c
 const BUTTON_FORMAT_GAME_NAME_TIP = "Does the game name need to be formatted when it is inserted into a parameter " + GAME_NAME_PARAMETER + ". Formatting replaces spaces and slashes with + signs, which is convenient for opening URLs in a browser.";
 const BUTTON_ADD_ARROW_ICON_TIP = "Whether to add an arrow icon to the button";
 
-const CONTEXT_MENU_SETTINGS = "Context Menu Settings";
+const DROPDOWN_MENU_SETTINGS = "Dropdown Menu Settings";
 
 let __idCounter = 0;
 
@@ -223,7 +223,6 @@ function SpawnContextMenuButtons(popup: any, node: any, lastClickedElement: stri
 
 	SyncLog('try to spawn ConextMenu Buttons');
 
-	// just buttons
 	if (global_object_settings.right_click_on_game_context_menu_buttons.length > 0) {
 		let element = node.children[0].lastElementChild;
 
@@ -253,7 +252,6 @@ function SpawnContextMenuButtons(popup: any, node: any, lastClickedElement: stri
 		});
 	}
 
-	// buttons in drop down menu
 	if (global_object_settings.right_click_on_game_context_menu_buttons_drop_down.items.length > 0) {
 		let element = node.children[0].children[3];
 
@@ -353,7 +351,7 @@ function SpawnAppPageButtons(elementsToSpawnAppPageButtons: any, lastClickedElem
 		elementsToSpawnAppPageButtons.forEach(elementToClone => {
 			global_object_settings.app_page_buttons.forEach((app: string) => {
 
-				const format_game_name = app.format_game_name ? (app.format_game_name == 'true') : ("true");
+				const format_game_name = app.format_game_name ? (app.format_game_name == 'true') : ('true');
 
 				const button_name = app.name.replace(
 					GAME_NAME_PARAMETER,
@@ -379,7 +377,7 @@ function SpawnAppPageButtons(elementsToSpawnAppPageButtons: any, lastClickedElem
 					clone.firstElementChild.appendChild(img);
 				}
 
-				clone.title = button_name;
+				clone.title = button_name + " 21";
 				clone.id = button_name + '_app_page_button';
 
 				parent2.parentElement.prepend(clone);
@@ -389,7 +387,7 @@ function SpawnAppPageButtons(elementsToSpawnAppPageButtons: any, lastClickedElem
 				});
 
 				spawnedAppPageButtonsCount = spawnedAppPageButtonsCount + 1;
-				SyncLog('added node in app page ' + lastClickedElement + ': ' + button_name + ", number: " + spawnedAppPageButtonsCount);
+				SyncLog('added node in app page ' + lastClickedElement + ': ' + button_name + ', number: ' + spawnedAppPageButtonsCount);
 			});
 		});
 	}
@@ -625,72 +623,458 @@ async function OnPopupCreation(popup: any) {
 
 //#region Settings
 
-const SettingsContent = () => {
-	const [infoMessage, setInfoMessage] = useState("");
+	type TopButtonSetting = {
+		name: string;
+		show_name: string;
+		icon: string;
+		show_icon: string;
+		path_to_app: string;
+	};
 
-	useEffect(() => {
-		setTimeout(TrySetupSettings, 100);
-	}, []);
+	type GenericButtonSetting = {
+		name: string;
+		format_game_name: string;
+		add_arrow_icon: string;
+		path_to_app: string;
+	};
 
-	return (
-		<>
-			<button 
-				onClick={() => {SaveSettings(setInfoMessage)}} 
-				title="Save settings"
-				style={{marginTop: "6px", backgroundColor: "#8FFF83", 
-					border: "0px", borderRadius: "2px", width: "100%", 
-					height: "50px", cursor: "pointer", fontSize: "23px", color: "#000"}}
-			>Save settings</button>
+	type StoreSupernavButtonSetting = {
+		name: string;
+		add_arrow_icon: string;
+		path_to_app: string;
+	};
 
-			{
-				infoMessage != "" &&
-				<>
-					<br></br>
-					<div
-						style={{ width: "100%", height: "auto", marginTop: "6px", 
-							fontSize: "23px", color: "#000", alignContent: "center",
-							backgroundColor: infoMessage == "Success!" ? "#8FFF83" : "#ff8e8e"
-						}}
-					>
-						{infoMessage}
-					</div>
-				</>
-			}
+	type AppPageButtonSetting = {
+		name: string;
+		icon: string;
+		format_game_name: string;
+		path_to_app: string;
+	};
 
-			<p>{GAME_NAME_PARAMETER_TIP}</p>
+	type SaveSnapshot = {
+		topButtons: TopButtonSetting[];
+		rightClickButtons: GenericButtonSetting[];
+		dropDownItems: GenericButtonSetting[];
+		gamePropertiesButtons: GenericButtonSetting[];
+		storeSupernavButtons: StoreSupernavButtonSetting[];
+		appPageButtons: AppPageButtonSetting[];
+		dropDownName: string;
+		dropDownAppendAfter: string;
+		topButtonsStyle: string;
+	};
 
-			<br></br>
-			<br></br>
+	const buttonBackgroundStyle = {
+		backgroundColor: '#21282f',
+		padding: '7px',
+		borderRadius: '8px',
+		marginBottom: '10px',
+	};
 
-			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Right click on game context menu buttons <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnRightClickOnGameContextMenuButtonsSettingsElement} title="Add right click on game context menu button">+</button>
-			</div>
+	function getSettingsDocument() {
+		return popup_desktop?.m_popup?.document ?? document;
+	}
 
-					<div id="right_click_on_game_context_menu_buttons_settings_handler"></div>
+	function getInputFromContainer(containerId: string): HTMLInputElement | null {
+		const element = getSettingsDocument().getElementById(containerId);
+		if (!element) return null;
+		return element.querySelector('input');
+	}
 
-			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
+	function setTextFieldValue(containerId: string, value: string) {
+		const input = getInputFromContainer(containerId);
+		if (input) {
+			input.value = value ?? '';
+		}
+	}
 
-			<br></br>
-			<br></br>
+	function setToggleValue(containerId: string, value: string) {
+		const input = getInputFromContainer(containerId);
+		if (input) {
+			input.checked = value === 'true';
+		}
+	}
 
-			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Right click on game context menu buttons in drop down <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnRightClickOnGameContextMenuButtonsDropDownSettingsElement} title="Add right click on game context menu button in drop down">+</button>
-			</div>
+	function getTextFieldValue(containerId: string, fallback: string = '') {
+		const input = getInputFromContainer(containerId);
+		return input ? input.value : fallback;
+	}
 
-					<div id="right_click_on_game_context_menu_buttons_drop_down_settings_handler"></div>
+	function getToggleValue(containerId: string, fallback: string = 'false') {
+		const input = getInputFromContainer(containerId);
+		return input ? input.checked.toString() : fallback;
+	}
 
-					<PanelSection 
-						title={CONTEXT_MENU_SETTINGS}
-					>
-						<div id="drop_down_name">
-							<TextField
-								label="Name"
-								description="Name for the drop-down menu section"
-							/>
+	function getTextAreaValue(elementId: string, fallback: string = '') {
+		const element = getSettingsDocument().getElementById(elementId) as HTMLTextAreaElement | null;
+		return element ? element.value : fallback;
+	}
+
+	function TrySetupSettings(settingsSnapshot: any) {
+		settingsSnapshot.top_buttons.forEach((app: TopButtonSetting, index: number) => {
+			setTextFieldValue(`top_buttons_name_${index}`, app.name);
+			setToggleValue(`top_buttons_show_name_${index}`, app.show_name);
+			setTextFieldValue(`top_buttons_icon_${index}`, app.icon);
+			setToggleValue(`top_buttons_show_icon_${index}`, app.show_icon);
+			setTextFieldValue(`top_buttons_path_to_app_${index}`, app.path_to_app);
+		});
+
+		settingsSnapshot.right_click_on_game_context_menu_buttons.forEach((app: GenericButtonSetting, index: number) => {
+			setTextFieldValue(`right_click_on_game_context_menu_buttons_name_${index}`, app.name);
+			setToggleValue(`right_click_on_game_context_menu_buttons_format_game_name_${index}`, app.format_game_name);
+			setToggleValue(`right_click_on_game_context_menu_buttons_add_arrow_icon_${index}`, app.add_arrow_icon);
+			setTextFieldValue(`right_click_on_game_context_menu_buttons_path_to_app_${index}`, app.path_to_app);
+		});
+
+		setTextFieldValue('drop_down_name_field', settingsSnapshot.right_click_on_game_context_menu_buttons_drop_down.name);
+		setTextFieldValue('drop_down_append_after_field', settingsSnapshot.right_click_on_game_context_menu_buttons_drop_down.append_after_element_number);
+
+		settingsSnapshot.right_click_on_game_context_menu_buttons_drop_down.items.forEach((app: GenericButtonSetting, index: number) => {
+			setTextFieldValue(`right_click_on_game_context_menu_buttons_drop_down_name_${index}`, app.name);
+			setToggleValue(`right_click_on_game_context_menu_buttons_drop_down_format_game_name_${index}`, app.format_game_name);
+			setToggleValue(`right_click_on_game_context_menu_buttons_drop_down_add_arrow_icon_${index}`, app.add_arrow_icon);
+			setTextFieldValue(`right_click_on_game_context_menu_buttons_drop_down_path_to_app_${index}`, app.path_to_app);
+		});
+
+		settingsSnapshot.game_properties_menu_buttons.forEach((app: GenericButtonSetting, index: number) => {
+			setTextFieldValue(`game_properties_menu_buttons_name_${index}`, app.name);
+			setToggleValue(`game_properties_menu_buttons_format_game_name_${index}`, app.format_game_name);
+			setToggleValue(`game_properties_menu_buttons_add_arrow_icon_${index}`, app.add_arrow_icon);
+			setTextFieldValue(`game_properties_menu_buttons_path_to_app_${index}`, app.path_to_app);
+		});
+
+		settingsSnapshot.store_supernav_buttons.forEach((app: StoreSupernavButtonSetting, index: number) => {
+			setTextFieldValue(`store_supernav_buttons_name_${index}`, app.name);
+			setToggleValue(`store_supernav_buttons_add_arrow_icon_${index}`, app.add_arrow_icon);
+			setTextFieldValue(`store_supernav_buttons_path_to_app_${index}`, app.path_to_app);
+		});
+
+		settingsSnapshot.app_page_buttons.forEach((app: AppPageButtonSetting, index: number) => {
+			setTextFieldValue(`app_page_buttons_name_${index}`, app.name);
+			setTextFieldValue(`app_page_buttons_icon_${index}`, app.icon);
+			setToggleValue(`app_page_buttons_format_game_name_${index}`, app.format_game_name);
+			setTextFieldValue(`app_page_buttons_path_to_app_${index}`, app.path_to_app);
+		});
+
+		const topButtonsStyleInput = getSettingsDocument().getElementById('TopButtonsStyleInput') as HTMLTextAreaElement | null;
+		if (topButtonsStyleInput) {
+			topButtonsStyleInput.value = settingsSnapshot.top_buttons_style;
+		}
+	}
+
+	const createDefaultTopButton = (): TopButtonSetting => ({
+		name: 'Steam',
+		show_name: 'true',
+		icon: 'https://raw.githubusercontent.com/diemonic1/Custom-buttons/refs/heads/main/PUBLIC_ICONS/steam.png',
+		show_icon: 'true',
+		path_to_app: 'https://store.steampowered.com/',
+	});
+
+	const createDefaultGenericButton = (): GenericButtonSetting => ({
+		name: 'SteamGridDB',
+		format_game_name: 'true',
+		add_arrow_icon: 'true',
+		path_to_app: 'https://www.steamgriddb.com/search/grids?term=%GAME_NAME%',
+	});
+
+	const createDefaultStoreSupernavButton = (): StoreSupernavButtonSetting => ({
+		name: 'Steam Sales',
+		add_arrow_icon: 'true',
+		path_to_app: 'https://steamdb.info/sales/history/',
+	});
+
+	const createDefaultAppPageButton = (): AppPageButtonSetting => ({
+		name: 'Nexus Mods',
+		icon: 'https://raw.githubusercontent.com/diemonic1/Custom-buttons/refs/heads/main/PUBLIC_ICONS/nexusMods.png',
+		format_game_name: 'true',
+		path_to_app: 'https://www.nexusmods.com/games?keyword=%GAME_NAME%&sort=downloads',
+	});
+
+	const SettingsContent = () => {
+		const initialSettings = global_object_settings as any;
+		const [infoMessage, setInfoMessage] = useState('');
+		const [topButtons, setTopButtons] = useState<TopButtonSetting[]>(() => [...(initialSettings.top_buttons ?? [])]);
+		const [rightClickButtons, setRightClickButtons] = useState<GenericButtonSetting[]>(() => [...(initialSettings.right_click_on_game_context_menu_buttons ?? [])]);
+		const [dropDownItems, setDropDownItems] = useState<GenericButtonSetting[]>(() => [...(initialSettings.right_click_on_game_context_menu_buttons_drop_down?.items ?? [])]);
+		const [gamePropertiesButtons, setGamePropertiesButtons] = useState<GenericButtonSetting[]>(() => [...(initialSettings.game_properties_menu_buttons ?? [])]);
+		const [storeSupernavButtons, setStoreSupernavButtons] = useState<StoreSupernavButtonSetting[]>(() => [...(initialSettings.store_supernav_buttons ?? [])]);
+		const [appPageButtons, setAppPageButtons] = useState<AppPageButtonSetting[]>(() => [...(initialSettings.app_page_buttons ?? [])]);
+		const [dropDownName, setDropDownName] = useState(initialSettings.right_click_on_game_context_menu_buttons_drop_down?.name ?? 'Additional');
+		const [dropDownAppendAfter, setDropDownAppendAfter] = useState(initialSettings.right_click_on_game_context_menu_buttons_drop_down?.append_after_element_number ?? '1');
+		const [topButtonsStyle, setTopButtonsStyle] = useState(initialSettings.top_buttons_style ?? '');
+
+		const preserveStaticFields = () => {
+			setDropDownName(getTextFieldValue('drop_down_name_field', dropDownName));
+			setDropDownAppendAfter(getTextFieldValue('drop_down_append_after_field', dropDownAppendAfter));
+			setTopButtonsStyle(getTextAreaValue('TopButtonsStyleInput', topButtonsStyle));
+		};
+
+		const readTopButtonsFromDom = (): TopButtonSetting[] => {
+			return topButtons.map((item, index) => ({
+				name: getTextFieldValue(`top_buttons_name_${index}`, item.name),
+				show_name: getToggleValue(`top_buttons_show_name_${index}`, item.show_name),
+				icon: getTextFieldValue(`top_buttons_icon_${index}`, item.icon),
+				show_icon: getToggleValue(`top_buttons_show_icon_${index}`, item.show_icon),
+				path_to_app: getTextFieldValue(`top_buttons_path_to_app_${index}`, item.path_to_app),
+			}));
+		};
+
+		const readRightClickButtonsFromDom = (): GenericButtonSetting[] => {
+			return rightClickButtons.map((item, index) => ({
+				name: getTextFieldValue(`right_click_on_game_context_menu_buttons_name_${index}`, item.name),
+				format_game_name: getToggleValue(`right_click_on_game_context_menu_buttons_format_game_name_${index}`, item.format_game_name),
+				add_arrow_icon: getToggleValue(`right_click_on_game_context_menu_buttons_add_arrow_icon_${index}`, item.add_arrow_icon),
+				path_to_app: getTextFieldValue(`right_click_on_game_context_menu_buttons_path_to_app_${index}`, item.path_to_app),
+			}));
+		};
+
+		const readDropDownItemsFromDom = (): GenericButtonSetting[] => {
+			return dropDownItems.map((item, index) => ({
+				name: getTextFieldValue(`right_click_on_game_context_menu_buttons_drop_down_name_${index}`, item.name),
+				format_game_name: getToggleValue(`right_click_on_game_context_menu_buttons_drop_down_format_game_name_${index}`, item.format_game_name),
+				add_arrow_icon: getToggleValue(`right_click_on_game_context_menu_buttons_drop_down_add_arrow_icon_${index}`, item.add_arrow_icon),
+				path_to_app: getTextFieldValue(`right_click_on_game_context_menu_buttons_drop_down_path_to_app_${index}`, item.path_to_app),
+			}));
+		};
+
+		const readGamePropertiesButtonsFromDom = (): GenericButtonSetting[] => {
+			return gamePropertiesButtons.map((item, index) => ({
+				name: getTextFieldValue(`game_properties_menu_buttons_name_${index}`, item.name),
+				format_game_name: getToggleValue(`game_properties_menu_buttons_format_game_name_${index}`, item.format_game_name),
+				add_arrow_icon: getToggleValue(`game_properties_menu_buttons_add_arrow_icon_${index}`, item.add_arrow_icon),
+				path_to_app: getTextFieldValue(`game_properties_menu_buttons_path_to_app_${index}`, item.path_to_app),
+			}));
+		};
+
+		const readStoreSupernavButtonsFromDom = (): StoreSupernavButtonSetting[] => {
+			return storeSupernavButtons.map((item, index) => ({
+				name: getTextFieldValue(`store_supernav_buttons_name_${index}`, item.name),
+				add_arrow_icon: getToggleValue(`store_supernav_buttons_add_arrow_icon_${index}`, item.add_arrow_icon),
+				path_to_app: getTextFieldValue(`store_supernav_buttons_path_to_app_${index}`, item.path_to_app),
+			}));
+		};
+
+		const readAppPageButtonsFromDom = (): AppPageButtonSetting[] => {
+			return appPageButtons.map((item, index) => ({
+				name: getTextFieldValue(`app_page_buttons_name_${index}`, item.name),
+				icon: getTextFieldValue(`app_page_buttons_icon_${index}`, item.icon),
+				format_game_name: getToggleValue(`app_page_buttons_format_game_name_${index}`, item.format_game_name),
+				path_to_app: getTextFieldValue(`app_page_buttons_path_to_app_${index}`, item.path_to_app),
+			}));
+		};
+
+		useEffect(() => {
+			const snapshot = {
+				top_buttons: topButtons,
+				right_click_on_game_context_menu_buttons: rightClickButtons,
+				right_click_on_game_context_menu_buttons_drop_down: {
+					name: dropDownName,
+					append_after_element_number: dropDownAppendAfter,
+					items: dropDownItems,
+				},
+				game_properties_menu_buttons: gamePropertiesButtons,
+				store_supernav_buttons: storeSupernavButtons,
+				app_page_buttons: appPageButtons,
+				top_buttons_style: topButtonsStyle,
+			};
+
+			setTimeout(() => TrySetupSettings(snapshot), 50);
+		}, [
+			topButtons,
+			rightClickButtons,
+			dropDownItems,
+			gamePropertiesButtons,
+			storeSupernavButtons,
+			appPageButtons,
+			dropDownName,
+			dropDownAppendAfter,
+			topButtonsStyle,
+		]);
+
+		return (
+			<>
+				<button
+					onClick={() => {
+						SaveSettings(setInfoMessage, {
+							topButtons: topButtons,
+							rightClickButtons: rightClickButtons,
+							dropDownItems: dropDownItems,
+							gamePropertiesButtons: gamePropertiesButtons,
+							storeSupernavButtons: storeSupernavButtons,
+							appPageButtons: appPageButtons,
+							dropDownName: dropDownName,
+							dropDownAppendAfter: dropDownAppendAfter,
+							topButtonsStyle: topButtonsStyle,
+						});
+					}}
+					title="Save settings"
+					style={{ marginTop: '6px', backgroundColor: '#8FFF83', border: '0px', borderRadius: '2px', width: '100%', height: '50px', cursor: 'pointer', fontSize: '23px', color: '#000' }}
+				>
+					Save settings
+				</button>
+
+				{infoMessage != '' && (
+					<>
+						<br></br>
+						<div
+							style={{
+								width: '100%',
+								height: 'auto',
+								marginTop: '6px',
+								fontSize: '23px',
+								color: '#000',
+								alignContent: 'center',
+								backgroundColor: infoMessage == 'Success!' ? '#8FFF83' : '#ff8e8e',
+							}}
+						>
+							{infoMessage}
 						</div>
-						<div id="drop_down_append_after">
+					</>
+				)}
+
+				<p>{GAME_NAME_PARAMETER_TIP}</p>
+
+				<br></br>
+				<br></br>
+
+				<div style={{ backgroundColor: "rgba(255, 202, 0, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Right click on game context menu buttons <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+						<button
+							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
+							onClick={() => {
+								preserveStaticFields();
+								setRightClickButtons([...readRightClickButtonsFromDom(), createDefaultGenericButton()]);
+							}}
+							title="Add right click on game context menu button"
+						>
+							+
+						</button>
+					</div>
+
+					{rightClickButtons.map((item, index) => (
+						<div key={`right-click-${index}`} style={buttonBackgroundStyle}>
+							<div style={{ textAlign: 'center' }} title="Right click on game context menu buttons">Button Number: {index + 1}</div>
+							<div id={`right_click_on_game_context_menu_buttons_name_${index}`}>
+								<TextField label="Name" description={BUTTON_NAME_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`right_click_on_game_context_menu_buttons_format_game_name_${index}`} title={BUTTON_FORMAT_GAME_NAME_TIP}>
+								<Field label="Format game name">
+									<Toggle
+										value={item.format_game_name === 'true'}
+										onChange={(checked) => {
+											setRightClickButtons((prev) => prev.map((curr, i) => i === index ? { ...curr, format_game_name: checked.toString() } : curr));
+										}}
+									/>
+								</Field>
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`right_click_on_game_context_menu_buttons_add_arrow_icon_${index}`} title={BUTTON_ADD_ARROW_ICON_TIP}>
+								<Field label="Add arrow icon">
+									<Toggle
+										value={item.add_arrow_icon === 'true'}
+										onChange={(checked) => {
+											setRightClickButtons((prev) => prev.map((curr, i) => i === index ? { ...curr, add_arrow_icon: checked.toString() } : curr));
+										}}
+									/>
+								</Field>
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`right_click_on_game_context_menu_buttons_path_to_app_${index}`}>
+								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div style={{ textAlign: 'center' }}>
+								<button
+									style={{ cursor: 'pointer', marginTop: '6px', backgroundColor: 'rgb(255 74 74)', border: '0px', borderRadius: '6px' }}
+									onClick={() => {
+										preserveStaticFields();
+										const current = readRightClickButtonsFromDom();
+										current.splice(index, 1);
+										setRightClickButtons(current);
+									}}
+								>
+									delete this button
+								</button>
+							</div>
+						</div>
+					))}
+				</div>
+
+				<div style={{ minHeight: '6px', backgroundColor: '#4a545d', margin: '8px 0px', borderRadius: '5px' }} />
+
+				<br></br>
+				<br></br>
+
+				<div style={{ backgroundColor: "rgba(255, 0, 0, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Right click on game context menu buttons in drop down <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+						<button
+							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
+							onClick={() => {
+								preserveStaticFields();
+								setDropDownItems([...readDropDownItemsFromDom(), createDefaultGenericButton()]);
+							}}
+							title="Add right click on game context menu button in drop down"
+						>
+							+
+						</button>
+					</div>
+
+					{dropDownItems.map((item, index) => (
+						<div key={`drop-down-${index}`} style={buttonBackgroundStyle}>
+							<div style={{ textAlign: 'center' }} title="Right click on game context menu buttons in drop down">Button Number: {index + 1}</div>
+							<div id={`right_click_on_game_context_menu_buttons_drop_down_name_${index}`}>
+								<TextField label="Name" description={BUTTON_NAME_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`right_click_on_game_context_menu_buttons_drop_down_format_game_name_${index}`} title={BUTTON_FORMAT_GAME_NAME_TIP}>
+								<Field label="Format game name">
+									<Toggle
+										value={item.format_game_name === 'true'}
+										onChange={(checked) => {
+											setDropDownItems((prev) => prev.map((curr, i) => i === index ? { ...curr, format_game_name: checked.toString() } : curr));
+										}}
+									/>
+								</Field>
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`right_click_on_game_context_menu_buttons_drop_down_add_arrow_icon_${index}`} title={BUTTON_ADD_ARROW_ICON_TIP}>							
+								<Field label="Add arrow icon">
+									<Toggle
+										value={item.add_arrow_icon === 'true'}
+										onChange={(checked) => {
+											setDropDownItems((prev) => prev.map((curr, i) => i === index ? { ...curr, add_arrow_icon: checked.toString() } : curr));
+										}}
+									/>
+								</Field>
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`right_click_on_game_context_menu_buttons_drop_down_path_to_app_${index}`}>
+								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div style={{ textAlign: 'center' }}>
+								<button
+									style={{ cursor: 'pointer', marginTop: '6px', backgroundColor: 'rgb(255 74 74)', border: '0px', borderRadius: '6px' }}
+									onClick={() => {
+										preserveStaticFields();
+										const current = readDropDownItemsFromDom();
+										current.splice(index, 1);
+										setDropDownItems(current);
+									}}
+								>
+									delete this button
+								</button>
+							</div>
+						</div>
+					))}
+
+					<PanelSection title={DROPDOWN_MENU_SETTINGS}>
+						<div id="drop_down_name_field">
+							<TextField label="Name" description="Name for the drop-down menu section" />
+						</div>
+						<div id="drop_down_append_after_field">
 							<TextField
 								label="Append after"
 								description="After which element should the menu be inserted"
@@ -700,697 +1084,382 @@ const SettingsContent = () => {
 							/>
 						</div>
 					</PanelSection>
-
-			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
-
-			<br></br>
-			<br></br>
-			
-			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Game properties menu buttons <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnGamePropertiesMenuButtonsSettingsElement} title="Add game properties menu buttons">+</button>
-			</div>
-
-					<div id="game_properties_menu_buttons_settings_handler"></div>
-			
-			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
-
-			<br></br>
-			<br></br>
-			
-			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h3 style={{ margin: 0 }}>Top Buttons</h3>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnTopButtonSettingsElement} title="Add top button">+</button>
-			</div>
-
-					<div id="top_buttons_settings_handler"></div>
-
-			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
-
-			<br></br>
-			<br></br>
-			
-			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h3 style={{ margin: 0 }}>Store supernav buttons</h3>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnStoreSupernavButtonsSettingsElement} title="Add store supernav buttons">+</button>
-			</div>
-
-					<div id="store_supernav_buttons_settings_handler"></div>
-
-			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
-
-			<br></br>
-			<br></br>
-			
-			<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-				<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>App page Buttons <span style={{color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
-				<button style={{ backgroundColor: "#d29cffff", cursor: "pointer", borderRadius: "10px", scale: "1.4", marginBottom : "10px" }} onClick={SpawnAppPageButtonSettingsElement} title="Add app page button">+</button>
-			</div>
-
-					<div id="app_page_buttons_settings_handler"></div>
-
-			<div style={{ minHeight: "6px", backgroundColor: "#4a545d", margin: "8px 0px", borderRadius: "5px" }}/>
-
-			<br></br>
-			<br></br>
-
-			<h2 style={{ margin: "0px" }}>Top Buttons style</h2>
-			<p>CSS style for the top buttons. You can copy it to another editor, modify it as you wish, and paste it back here.</p>
-			<textarea 
-				id="TopButtonsStyleInput"
-				style={{ width: '94%', minHeight: "100px", padding: '4px 8px', fontSize: '12px' }}
-			>
-			</textarea>
-		</>
-	);
-};
-
-function TrySetupSettings(){
-	global_object_settings.top_buttons.forEach((app: any, index: number) => {
-		SpawnTopButtonSettingsElement(app);
-	})
-
-	global_object_settings.right_click_on_game_context_menu_buttons.forEach((app: any, index: number) => {
-		SpawnRightClickOnGameContextMenuButtonsSettingsElement(app);
-	})
-	
-	let element = popup_desktop.m_popup.document.getElementById("drop_down_name").querySelector("input");
-
-	if (element) {
-		element.value = global_object_settings.right_click_on_game_context_menu_buttons_drop_down.name;
-	}
-
-	element = popup_desktop.m_popup.document.getElementById("drop_down_append_after").querySelector("input");
-
-	if (element) {
-		element.value = global_object_settings.right_click_on_game_context_menu_buttons_drop_down.append_after_element_number;
-	}
-
-	element = popup_desktop.m_popup.document.getElementById("TopButtonsStyleInput");
-
-	if (element) {
-		element.value = global_object_settings.top_buttons_style;
-	}
-
-	global_object_settings.right_click_on_game_context_menu_buttons_drop_down.items.forEach((app: any, index: number) => {
-		SpawnRightClickOnGameContextMenuButtonsDropDownSettingsElement(app);
-	})
-
-	global_object_settings.game_properties_menu_buttons.forEach((app: any, index: number) => {
-		SpawnGamePropertiesMenuButtonsSettingsElement(app);
-	})
-
-	global_object_settings.store_supernav_buttons.forEach((app: any, index: number) => {
-		SpawnStoreSupernavButtonsSettingsElement(app);
-	})
-
-	global_object_settings.app_page_buttons.forEach((app: any, index: number) => {
-		SpawnAppPageButtonSettingsElement(app);
-	})
-}
-
-const buttonBackgroundStyle = `
-		background-color: #21282f;
-		padding: 7px;
-		border-radius: 8px;
-		margin-bottom: 10px;
-	`;
-
-function SpawnTopButtonSettingsElement(app: any = undefined){
-	if (app.name == undefined){
-		app = {
-			name: "Steam",
-            show_name: "true",
-            icon: "https://raw.githubusercontent.com/diemonic1/Custom-buttons/refs/heads/main/PUBLIC_ICONS/steam.png",
-            show_icon: "true",
-            path_to_app: "https://store.steampowered.com/"
-		}
-	}
-
-	const top_buttons_settings_handler = popup_desktop.m_popup.document.getElementById("top_buttons_settings_handler");
-	
-	const newElement = popup_desktop.m_popup.document.createElement('div');
-
-	const id = generateId();
-
-	newElement.style = buttonBackgroundStyle;
-
-	newElement.id = "top_buttons_settings_element_" + id;
-	newElement.innerHTML = `
-		<div class="top_buttons_settings_item">
-			<span title="` + BUTTON_NAME_TIP + `">
-				<span>Name</span>
-				<input type="text" name="name" value="${app.name}" style="width:220px;padding:4px 8px" />
-			</span>
-			<br>
-
-			<span title="` + BUTTON_SHOW_NAME_TIP + `">
-				<span>Show name</span>
-				<input type="checkbox" name="show_name" ${app.show_name === "true" ? "checked" : ""} />
-			</span>
-			<br>
-
-			<span title="` + BUTTON_ICON_TIP + `">
-				<span>Icon</span>
-				<input type="text" name="icon" value="${app.icon}" style="width:220px;padding:4px 8px" />
-			</span>
-			<br>
-
-			<span title="` + BUTTON_SHOW_ICON_TIP + `">
-				<span>Show icon</span>
-				<input type="checkbox" name="show_icon" ${app.show_icon === "true" ? "checked" : ""} />
-			</span>
-			<br>
-
-			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL or App Path</span>
-				<input type="text" name="path_to_app" value="${app.path_to_app}" style="width:220px;padding:4px 8px" />
-			</span>
-			<br>
-			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
-		</div>
-	`;
-
-	top_buttons_settings_handler.appendChild(newElement);
-
-	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
-		.addEventListener('click', function (event) {
-				DeleteObject("top_buttons_settings_element_" + id);
-			});
-}
-
-function SpawnRightClickOnGameContextMenuButtonsSettingsElement(app: any = undefined){
-	if (app.name == undefined){
-		app = {
-			name: "SteamGridDB",
-            format_game_name: "true",
-			add_arrow_icon: "true",
-            path_to_app: "https://www.steamgriddb.com/search/grids?term=%GAME_NAME%"
-		}
-	}
-
-	const right_click_on_game_context_menu_buttons_settings_handler = popup_desktop.m_popup.document.getElementById("right_click_on_game_context_menu_buttons_settings_handler");
-	
-	const newElement = popup_desktop.m_popup.document.createElement('div');
-
-	const id = generateId();
-
-	newElement.style = buttonBackgroundStyle;
-
-	newElement.id = "right_click_on_game_context_menu_buttons_settings_element_" + id;
-	newElement.innerHTML = `
-		<div class="right_click_on_game_context_menu_buttons_settings_item">
-			<span title="` + BUTTON_NAME_TIP + `">
-				<span>Name</span>
-				<input
-					type="text"
-					name="name"
-					value="` + app.name + `"
-					style="width: 220px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_FORMAT_GAME_NAME_TIP + `">
-				<span>Format game name</span>
-				<input
-					type="checkbox"
-					name="format_game_name"
-					${app.format_game_name === "true" ? "checked" : ""}
-					style="width: 40px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_ADD_ARROW_ICON_TIP + `">
-				<span>Add arrow icon</span>
-				<input
-					type="checkbox"
-					name="add_arrow_icon"
-					${app.add_arrow_icon === "true" ? "checked" : ""}
-					style="width: 40px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL or App Path</span>
-				<input
-					type="text"
-					name="path_to_app"
-					value="` + app.path_to_app + `"
-					style="width: 220px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
-		</div>
-	`;
-
-	right_click_on_game_context_menu_buttons_settings_handler.appendChild(newElement);
-
-	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
-		.addEventListener('click', function (event) {
-				DeleteObject("right_click_on_game_context_menu_buttons_settings_element_" + id);
-			});
-}
-
-function SpawnRightClickOnGameContextMenuButtonsDropDownSettingsElement(app: any = undefined){
-	if (app.name == undefined){
-		app = {
-			name: "SteamGridDB",
-            format_game_name: "true",
-			add_arrow_icon: "true",
-            path_to_app: "https://www.steamgriddb.com/search/grids?term=%GAME_NAME%"
-		}
-	}
-
-	const right_click_on_game_context_menu_buttons_drop_down_settings_handler = popup_desktop.m_popup.document.getElementById("right_click_on_game_context_menu_buttons_drop_down_settings_handler");
-	
-	const newElement = popup_desktop.m_popup.document.createElement('div');
-
-	const id = generateId();
-
-	newElement.style = buttonBackgroundStyle;
-
-	newElement.id = "right_click_on_game_context_menu_buttons_drop_down_settings_element_" + id;
-	newElement.innerHTML = `
-		<div class="right_click_on_game_context_menu_buttons_drop_down_settings_item">
-			<span title="` + BUTTON_NAME_TIP + `">
-				<span>Name</span>
-				<input
-					type="text"
-					name="name"
-					value="` + app.name + `"
-					style="width: 220px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_FORMAT_GAME_NAME_TIP + `">
-				<span>Format game name</span>
-				<input
-					type="checkbox"
-					name="format_game_name"
-					${app.format_game_name === "true" ? "checked" : ""}
-					style="width: 40px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_ADD_ARROW_ICON_TIP + `">
-				<span>Add arrow icon</span>
-				<input
-					type="checkbox"
-					name="add_arrow_icon"
-					${app.add_arrow_icon === "true" ? "checked" : ""}
-					style="width: 40px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL or App Path</span>
-				<input
-					type="text"
-					name="path_to_app"
-					value="` + app.path_to_app + `"
-					style="width: 220px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
-		</div>
-	`;
-
-	right_click_on_game_context_menu_buttons_drop_down_settings_handler.appendChild(newElement);
-
-	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
-		.addEventListener('click', function (event) {
-				DeleteObject("right_click_on_game_context_menu_buttons_drop_down_settings_element_" + id);
-			});	
-}
-
-function SpawnGamePropertiesMenuButtonsSettingsElement(app: any = undefined){
-	if (app.name == undefined){
-		app = {
-			name: "SteamGridDB",
-            format_game_name: "true",
-			add_arrow_icon: "true",
-            path_to_app: "https://www.steamgriddb.com/search/grids?term=%GAME_NAME%"
-		}
-	}
-
-	const game_properties_menu_buttons_settings_handler = popup_desktop.m_popup.document.getElementById("game_properties_menu_buttons_settings_handler");
-	
-	const newElement = popup_desktop.m_popup.document.createElement('div');
-
-	const id = generateId();
-
-	newElement.style = buttonBackgroundStyle;
-
-	newElement.id = "game_properties_menu_buttons_settings_element_" + id;
-	newElement.innerHTML = `
-		<div class="game_properties_menu_buttons_settings_item">
-			<span title="` + BUTTON_NAME_TIP + `">
-				<span>Name</span>
-				<input
-					type="text"
-					name="name"
-					value="` + app.name + `"
-					style="width: 220px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_FORMAT_GAME_NAME_TIP + `">
-				<span>Format game name</span>
-				<input
-					type="checkbox"
-					name="format_game_name"
-					${app.format_game_name === "true" ? "checked" : ""}
-					style="width: 40px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_ADD_ARROW_ICON_TIP + `">
-				<span>Add arrow icon</span>
-				<input
-					type="checkbox"
-					name="add_arrow_icon"
-					${app.add_arrow_icon === "true" ? "checked" : ""}
-					style="width: 40px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL or App Path</span>
-				<input
-					type="text"
-					name="path_to_app"
-					value="` + app.path_to_app + `"
-					style="width: 220px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
-		</div>
-	`;
-
-	game_properties_menu_buttons_settings_handler.appendChild(newElement);
-
-	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
-		.addEventListener('click', function (event) {
-				DeleteObject("game_properties_menu_buttons_settings_element_" + id);
-			});
-}
-
-function SpawnStoreSupernavButtonsSettingsElement(app: any = undefined){
-	if (app.name == undefined){
-		app = {
-            name: "Steam Sales",
-            add_arrow_icon: "true",
-            path_to_app: "https://steamdb.info/sales/history/"
-		}
-	}
-
-	const store_supernav_buttons_settings_handler = popup_desktop.m_popup.document.getElementById("store_supernav_buttons_settings_handler");
-	
-	const newElement = popup_desktop.m_popup.document.createElement('div');
-
-	const id = generateId();
-
-	newElement.style = buttonBackgroundStyle;
-
-	newElement.id = "store_supernav_buttons_settings_element_" + id;
-	newElement.innerHTML = `
-		<div class="store_supernav_buttons_settings_item">
-			<span title="` + BUTTON_NAME_TIP + `">
-				<span>Name</span>
-				<input
-					type="text"
-					name="name"
-					value="` + app.name + `"
-					style="width: 220px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_ADD_ARROW_ICON_TIP + `">
-				<span>Add arrow icon</span>
-				<input
-					type="checkbox"
-					name="add_arrow_icon"
-					${app.add_arrow_icon === "true" ? "checked" : ""}
-					style="width: 40px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL or App Path</span>
-				<input
-					type="text"
-					name="path_to_app"
-					value="` + app.path_to_app + `"
-					style="width: 220px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
-		</div>
-	`;
-
-	store_supernav_buttons_settings_handler.appendChild(newElement);
-
-	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
-		.addEventListener('click', function (event) {
-				DeleteObject("store_supernav_buttons_settings_element_" + id);
-			});
-}
-
-function SpawnAppPageButtonSettingsElement(app: any = undefined){
-	if (app.name == undefined){
-		app = {
-            name: "Nexus Mods",
-            format_game_name: "true",
-            icon: "https://raw.githubusercontent.com/diemonic1/Custom-buttons/refs/heads/main/PUBLIC_ICONS/nexusMods.png",
-            path_to_app: "https://www.nexusmods.com/games?keyword=%GAME_NAME%&sort=downloads"
-		}
-	}
-
-	const app_page_buttons_settings_handler = popup_desktop.m_popup.document.getElementById("app_page_buttons_settings_handler");
-	
-	const newElement = popup_desktop.m_popup.document.createElement('div');
-
-	const id = generateId();
-
-	newElement.style = buttonBackgroundStyle;
-
-	newElement.id = "app_page_buttons_settings_element_" + id;
-	newElement.innerHTML = `
-		<div class="app_page_buttons_settings_item">
-			<span title="` + BUTTON_NAME_TIP + `">
-				<span>Name</span>
-				<input
-					type="text"
-					name="name"
-					value="` + app.name + `"
-					style="width: 220px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_ICON_TIP + `">
-				<span>Icon</span>
-				<input
-					type="text"
-					name="icon"
-					value="` + app.icon + `"
-					style="width: 220px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_FORMAT_GAME_NAME_TIP + `">
-				<span>Format game name</span>
-				<input
-					type="checkbox"
-					name="format_game_name"
-					${app.format_game_name === "true" ? "checked" : ""}
-					style="width: 40px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<span title="` + BUTTON_PATH_TO_APP_TIP + `">
-				<span>URL or App Path</span>
-				<input
-					type="text"
-					name="path_to_app"
-					value="` + app.path_to_app + `"
-					style="width: 220px; padding: 4px 8px"
-					required
-				/>
-			</span>
-			<br>
-			<center><button style="cursor: pointer; margin-top: 6px; background-color: rgb(255 74 74); border: 0px; border-radius: 6px;" id="` + id + `_deleteButton">delete this button</button></center>
-		</div>
-	`;
-
-	app_page_buttons_settings_handler.appendChild(newElement);
-
-	popup_desktop.m_popup.document.getElementById(id + "_deleteButton")
-		.addEventListener('click', function (event) {
-				DeleteObject("app_page_buttons_settings_element_" + id);
-			});
-}
-
-async function SaveSettings(setInfoMessage: Function){
-	setInfoMessage("");
+				</div>
+
+				<div style={{ minHeight: '6px', backgroundColor: '#4a545d', margin: '8px 0px', borderRadius: '5px' }} />
+
+				<br></br>
+				<br></br>
+
+				<div style={{ backgroundColor: "rgba(61, 255, 0, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Game properties menu buttons <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+						<button
+							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
+							onClick={() => {
+								preserveStaticFields();
+								setGamePropertiesButtons([...readGamePropertiesButtonsFromDom(), createDefaultGenericButton()]);
+							}}
+							title="Add game properties menu buttons"
+						>
+							+
+						</button>
+					</div>
+
+					{gamePropertiesButtons.map((item, index) => (
+						<div key={`game-properties-${index}`} style={buttonBackgroundStyle}>
+							<div style={{ textAlign: 'center' }} title="Game properties menu buttons">Button Number: {index + 1}</div>
+							<div id={`game_properties_menu_buttons_name_${index}`}>
+								<TextField label="Name" description={BUTTON_NAME_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`game_properties_menu_buttons_format_game_name_${index}`} title={BUTTON_FORMAT_GAME_NAME_TIP}>
+								<Field label="Format game name">
+									<Toggle
+										value={item.format_game_name === 'true'}
+										onChange={(checked) => {
+											setGamePropertiesButtons((prev) => prev.map((curr, i) => i === index ? { ...curr, format_game_name: checked.toString() } : curr));
+										}}
+									/>
+								</Field>
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`game_properties_menu_buttons_add_arrow_icon_${index}`} title={BUTTON_ADD_ARROW_ICON_TIP}>
+								<Field label="Add arrow icon">
+									<Toggle
+										value={item.add_arrow_icon === 'true'}
+										onChange={(checked) => {
+											setGamePropertiesButtons((prev) => prev.map((curr, i) => i === index ? { ...curr, add_arrow_icon: checked.toString() } : curr));
+										}}
+									/>
+								</Field>
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`game_properties_menu_buttons_path_to_app_${index}`}>
+								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div style={{ textAlign: 'center' }}>
+								<button
+									style={{ cursor: 'pointer', marginTop: '6px', backgroundColor: 'rgb(255 74 74)', border: '0px', borderRadius: '6px' }}
+									onClick={() => {
+										preserveStaticFields();
+										const current = readGamePropertiesButtonsFromDom();
+										current.splice(index, 1);
+										setGamePropertiesButtons(current);
+									}}
+								>
+									delete this button
+								</button>
+							</div>
+						</div>
+					))}
+				</div>
+
+				<div style={{ minHeight: '6px', backgroundColor: '#4a545d', margin: '8px 0px', borderRadius: '5px' }} />
+
+				<br></br>
+				<br></br>
+
+				<div style={{ backgroundColor: "rgba(0, 255, 202, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+						<h3 style={{ margin: 0 }}>Top Buttons</h3>
+						<button
+							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
+							onClick={() => {
+								preserveStaticFields();
+								setTopButtons([...readTopButtonsFromDom(), createDefaultTopButton()]);
+							}}
+							title="Add top button"
+						>
+							+
+						</button>
+					</div>
+
+					{topButtons.map((item, index) => (
+						<div key={`top-buttons-${index}`} style={buttonBackgroundStyle}>
+							<div style={{ textAlign: 'center' }} title="Top buttons">Button Number: {index + 1}</div>
+							<div id={`top_buttons_name_${index}`}>
+								<TextField label="Name" description={BUTTON_NAME_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`top_buttons_show_name_${index}`} title={BUTTON_SHOW_NAME_TIP}>
+								<Field label="Show name">
+									<Toggle
+										value={item.show_name === 'true'}
+										onChange={(checked) => {
+											setTopButtons((prev) => prev.map((curr, i) => i === index ? { ...curr, show_name: checked.toString() } : curr));
+										}}
+									/>
+								</Field>
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`top_buttons_icon_${index}`}>
+								<TextField label="Icon" description={BUTTON_ICON_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`top_buttons_show_icon_${index}`} title={BUTTON_SHOW_ICON_TIP}>
+								<Field label="Show icon">
+									<Toggle
+										value={item.show_icon === 'true'}
+										onChange={(checked) => {
+											setTopButtons((prev) => prev.map((curr, i) => i === index ? { ...curr, show_icon: checked.toString() } : curr));
+										}}
+									/>
+								</Field>
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`top_buttons_path_to_app_${index}`}>
+								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div style={{ textAlign: 'center' }}>
+								<button
+									style={{ cursor: 'pointer', marginTop: '6px', backgroundColor: 'rgb(255 74 74)', border: '0px', borderRadius: '6px' }}
+									onClick={() => {
+										preserveStaticFields();
+										const current = readTopButtonsFromDom();
+										current.splice(index, 1);
+										setTopButtons(current);
+									}}
+								>
+									delete this button
+								</button>
+							</div>
+						</div>
+					))}
+				</div>
+
+				<div style={{ minHeight: '6px', backgroundColor: '#4a545d', margin: '8px 0px', borderRadius: '5px' }} />
+
+				<br></br>
+				<br></br>
+
+				<div style={{ backgroundColor: "rgba(230, 0, 255, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+						<h3 style={{ margin: 0 }}>Store supernav buttons</h3>
+						<button
+							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
+							onClick={() => {
+								preserveStaticFields();
+								setStoreSupernavButtons([...readStoreSupernavButtonsFromDom(), createDefaultStoreSupernavButton()]);
+							}}
+							title="Add store supernav buttons"
+						>
+							+
+						</button>
+					</div>
+
+					{storeSupernavButtons.map((item, index) => (
+						<div key={`store-supernav-${index}`} style={buttonBackgroundStyle}>
+							<div style={{ textAlign: 'center' }} title="Store supernav buttons">Button Number: {index + 1}</div>
+							<div id={`store_supernav_buttons_name_${index}`}>
+								<TextField label="Name" description={BUTTON_NAME_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`store_supernav_buttons_add_arrow_icon_${index}`} title={BUTTON_ADD_ARROW_ICON_TIP}>
+								<Field label="Add arrow icon">
+									<Toggle
+										value={item.add_arrow_icon === 'true'}
+										onChange={(checked) => {
+											setStoreSupernavButtons((prev) => prev.map((curr, i) => i === index ? { ...curr, add_arrow_icon: checked.toString() } : curr));
+										}}
+									/>
+								</Field>
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`store_supernav_buttons_path_to_app_${index}`}>
+								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div style={{ textAlign: 'center' }}>
+								<button
+									style={{ cursor: 'pointer', marginTop: '6px', backgroundColor: 'rgb(255 74 74)', border: '0px', borderRadius: '6px' }}
+									onClick={() => {
+										preserveStaticFields();
+										const current = readStoreSupernavButtonsFromDom();
+										current.splice(index, 1);
+										setStoreSupernavButtons(current);
+									}}
+								>
+									delete this button
+								</button>
+							</div>
+						</div>
+					))}
+				</div>
+
+				<div style={{ minHeight: '6px', backgroundColor: '#4a545d', margin: '8px 0px', borderRadius: '5px' }} />
+
+				<br></br>
+				<br></br>
+
+				<div style={{ backgroundColor: "rgba(0, 123, 255, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>App page Buttons <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+						<button
+							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
+							onClick={() => {
+								preserveStaticFields();
+								setAppPageButtons([...readAppPageButtonsFromDom(), createDefaultAppPageButton()]);
+							}}
+							title="Add app page button"
+						>
+							+
+						</button>
+					</div>
+
+					{appPageButtons.map((item, index) => (
+						<div key={`app-page-${index}`} style={buttonBackgroundStyle}>
+							<div style={{ textAlign: 'center' }} title="App page buttons">Button Number: {index + 1}</div>
+							<div id={`app_page_buttons_name_${index}`}>
+								<TextField label="Name" description={BUTTON_NAME_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`app_page_buttons_icon_${index}`}>
+								<TextField label="Icon" description={BUTTON_ICON_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`app_page_buttons_format_game_name_${index}`} title={BUTTON_FORMAT_GAME_NAME_TIP}>
+								<Field label="Format game name">
+									<Toggle
+										value={item.format_game_name === 'true'}
+										onChange={(checked) => {
+											setAppPageButtons((prev) => prev.map((curr, i) => i === index ? { ...curr, format_game_name: checked.toString() } : curr));
+										}}
+									/>
+								</Field>
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div id={`app_page_buttons_path_to_app_${index}`}>
+								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+							</div>
+							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
+							<div style={{ textAlign: 'center' }}>
+								<button
+									style={{ cursor: 'pointer', marginTop: '6px', backgroundColor: 'rgb(255 74 74)', border: '0px', borderRadius: '6px' }}
+									onClick={() => {
+										preserveStaticFields();
+										const current = readAppPageButtonsFromDom();
+										current.splice(index, 1);
+										setAppPageButtons(current);
+									}}
+								>
+									delete this button
+								</button>
+							</div>
+						</div>
+					))}
+				</div>
+
+				<div style={{ minHeight: '6px', backgroundColor: '#4a545d', margin: '8px 0px', borderRadius: '5px' }} />
+
+				<br></br>
+				<br></br>
+
+				<h2 style={{ margin: '0px' }}>Top Buttons style</h2>
+				<p>CSS style for the top buttons. You can copy it to another editor, modify it as you wish, and paste it back here.</p>
+				<textarea 
+					id="TopButtonsStyleInput" 
+					style={{ 
+						width: '94%', 
+						minHeight: '150px', 
+						padding: '4px 8px', 
+						fontSize: '12px',
+						backgroundColor: '#2e343b',
+						borderRadius: '6px',
+						border: '0px',
+						color: '#ffffff',
+						resize: 'none'
+					}}>
+				</textarea>
+			</>
+		);
+	};
+
+async function SaveSettings(setInfoMessage: Function, snapshot: SaveSnapshot) {
+	setInfoMessage('');
 
 	try {
-		SyncLog("Save Settings");
+		SyncLog('Save Settings');
 
-		let result = {};
+		let result: any = {};
 
-		let handler = popup_desktop.m_popup.document.getElementById("top_buttons_settings_handler");
-		let items = handler.querySelectorAll(".top_buttons_settings_item");
+		let result_top_buttons: TopButtonSetting[] = [];
+		for (let index = 0; index < snapshot.topButtons.length; index++) {
+			result_top_buttons.push({
+				name: getTextFieldValue(`top_buttons_name_${index}`, snapshot.topButtons[index].name),
+				show_name: snapshot.topButtons[index].show_name,
+				icon: getTextFieldValue(`top_buttons_icon_${index}`, snapshot.topButtons[index].icon),
+				show_icon: snapshot.topButtons[index].show_icon,
+				path_to_app: getTextFieldValue(`top_buttons_path_to_app_${index}`, snapshot.topButtons[index].path_to_app),
+			});
+		}
+		result['top_buttons'] = result_top_buttons;
 
-		let result_top_buttons = [];
+		let result_right_click_on_game_context_menu_buttons: GenericButtonSetting[] = [];
+		for (let index = 0; index < snapshot.rightClickButtons.length; index++) {
+			result_right_click_on_game_context_menu_buttons.push({
+				name: getTextFieldValue(`right_click_on_game_context_menu_buttons_name_${index}`, snapshot.rightClickButtons[index].name),
+				format_game_name: snapshot.rightClickButtons[index].format_game_name,
+				add_arrow_icon: snapshot.rightClickButtons[index].add_arrow_icon,
+				path_to_app: getTextFieldValue(`right_click_on_game_context_menu_buttons_path_to_app_${index}`, snapshot.rightClickButtons[index].path_to_app),
+			});
+		}
+		result['right_click_on_game_context_menu_buttons'] = result_right_click_on_game_context_menu_buttons;
 
-		items.forEach(item => {
-			const obj = {
-				name: item.querySelector('[name="name"]').value,
-				show_name: item.querySelector('[name="show_name"]').checked.toString(),
-				icon: item.querySelector('[name="icon"]').value,
-				show_icon: item.querySelector('[name="show_icon"]').checked.toString(),
-				path_to_app: item.querySelector('[name="path_to_app"]').value
-			};
-
-			result_top_buttons.push(obj);
-		});
-
-		result["top_buttons"] = result_top_buttons;
-
-		handler = popup_desktop.m_popup.document.getElementById("right_click_on_game_context_menu_buttons_settings_handler");
-		items = handler.querySelectorAll(".right_click_on_game_context_menu_buttons_settings_item");
-
-		let result_right_click_on_game_context_menu_buttons = [];
-
-		items.forEach(item => {
-			const obj = {
-				name: item.querySelector('[name="name"]').value,
-				format_game_name: item.querySelector('[name="format_game_name"]').checked.toString(),
-				add_arrow_icon: item.querySelector('[name="add_arrow_icon"]').checked.toString(),
-				path_to_app: item.querySelector('[name="path_to_app"]').value
-			};
-
-			result_right_click_on_game_context_menu_buttons.push(obj);
-		});
-
-		result["right_click_on_game_context_menu_buttons"] = result_right_click_on_game_context_menu_buttons;
-
-		handler = popup_desktop.m_popup.document.getElementById("right_click_on_game_context_menu_buttons_drop_down_settings_handler");
-		items = handler.querySelectorAll(".right_click_on_game_context_menu_buttons_drop_down_settings_item");
-
-		let result_right_click_on_game_context_menu_buttons_drop_down = [];
-
-		items.forEach(item => {
-			const obj = {
-				name: item.querySelector('[name="name"]').value,
-				format_game_name: item.querySelector('[name="format_game_name"]').checked.toString(),
-				add_arrow_icon: item.querySelector('[name="add_arrow_icon"]').checked.toString(),
-				path_to_app: item.querySelector('[name="path_to_app"]').value
-			};
-
-			result_right_click_on_game_context_menu_buttons_drop_down.push(obj);
-		});
-
-		let current_items = {};
-		current_items["items"] = result_right_click_on_game_context_menu_buttons_drop_down;
-
-		let element = popup_desktop.m_popup.document.getElementById("drop_down_name").querySelector("input");
-
-		if (element) {
-			current_items["name"] = element.value.toString();
+		let result_right_click_on_game_context_menu_buttons_drop_down: GenericButtonSetting[] = [];
+		for (let index = 0; index < snapshot.dropDownItems.length; index++) {
+			result_right_click_on_game_context_menu_buttons_drop_down.push({
+				name: getTextFieldValue(`right_click_on_game_context_menu_buttons_drop_down_name_${index}`, snapshot.dropDownItems[index].name),
+				format_game_name: snapshot.dropDownItems[index].format_game_name,
+				add_arrow_icon: snapshot.dropDownItems[index].add_arrow_icon,
+				path_to_app: getTextFieldValue(`right_click_on_game_context_menu_buttons_drop_down_path_to_app_${index}`, snapshot.dropDownItems[index].path_to_app),
+			});
 		}
 
-		element = popup_desktop.m_popup.document.getElementById("drop_down_append_after").querySelector("input");
+		result['right_click_on_game_context_menu_buttons_drop_down'] = {
+			name: getTextFieldValue('drop_down_name_field', snapshot.dropDownName),
+			append_after_element_number: getTextFieldValue('drop_down_append_after_field', snapshot.dropDownAppendAfter),
+			items: result_right_click_on_game_context_menu_buttons_drop_down,
+		};
 
-		if (element) {
-			current_items["append_after_element_number"] = element.value.toString();
+		let result_game_properties_menu_buttons: GenericButtonSetting[] = [];
+		for (let index = 0; index < snapshot.gamePropertiesButtons.length; index++) {
+			result_game_properties_menu_buttons.push({
+				name: getTextFieldValue(`game_properties_menu_buttons_name_${index}`, snapshot.gamePropertiesButtons[index].name),
+				format_game_name: snapshot.gamePropertiesButtons[index].format_game_name,
+				add_arrow_icon: snapshot.gamePropertiesButtons[index].add_arrow_icon,
+				path_to_app: getTextFieldValue(`game_properties_menu_buttons_path_to_app_${index}`, snapshot.gamePropertiesButtons[index].path_to_app),
+			});
 		}
+		result['game_properties_menu_buttons'] = result_game_properties_menu_buttons;
 
-		result["right_click_on_game_context_menu_buttons_drop_down"] = current_items;
-
-		handler = popup_desktop.m_popup.document.getElementById("game_properties_menu_buttons_settings_handler");
-		items = handler.querySelectorAll(".game_properties_menu_buttons_settings_item");
-
-		let result_game_properties_menu_buttons = [];
-
-		items.forEach(item => {
-			const obj = {
-				name: item.querySelector('[name="name"]').value,
-				format_game_name: item.querySelector('[name="format_game_name"]').checked.toString(),
-				add_arrow_icon: item.querySelector('[name="add_arrow_icon"]').checked.toString(),
-				path_to_app: item.querySelector('[name="path_to_app"]').value
-			};
-
-			result_game_properties_menu_buttons.push(obj);
-		});
-
-		result["game_properties_menu_buttons"] = result_game_properties_menu_buttons;
-
-		handler = popup_desktop.m_popup.document.getElementById("store_supernav_buttons_settings_handler");
-		items = handler.querySelectorAll(".store_supernav_buttons_settings_item");
-
-		let result_store_supernav_buttons = [];
-
-		items.forEach(item => {
-			const obj = {
-				name: item.querySelector('[name="name"]').value,
-				add_arrow_icon: item.querySelector('[name="add_arrow_icon"]').checked.toString(),
-				path_to_app: item.querySelector('[name="path_to_app"]').value
-			};
-
-			result_store_supernav_buttons.push(obj);
-		});
-
-		result["store_supernav_buttons"] = result_store_supernav_buttons;
-
-		handler = popup_desktop.m_popup.document.getElementById("app_page_buttons_settings_handler");
-		items = handler.querySelectorAll(".app_page_buttons_settings_item");
-
-		let result_app_page_buttons = [];
-
-		items.forEach(item => {
-			const obj = {
-				name: item.querySelector('[name="name"]').value,
-				icon: item.querySelector('[name="icon"]').value,
-				format_game_name: item.querySelector('[name="format_game_name"]').checked.toString(),
-				path_to_app: item.querySelector('[name="path_to_app"]').value
-			};
-
-			result_app_page_buttons.push(obj);
-		});
-
-		result["app_page_buttons"] = result_app_page_buttons;
-
-		element = popup_desktop.m_popup.document.getElementById("TopButtonsStyleInput");
-
-		if (element) {
-			result["top_buttons_style"] = element.value;
+		let result_store_supernav_buttons: StoreSupernavButtonSetting[] = [];
+		for (let index = 0; index < snapshot.storeSupernavButtons.length; index++) {
+			result_store_supernav_buttons.push({
+				name: getTextFieldValue(`store_supernav_buttons_name_${index}`, snapshot.storeSupernavButtons[index].name),
+				add_arrow_icon: snapshot.storeSupernavButtons[index].add_arrow_icon,
+				path_to_app: getTextFieldValue(`store_supernav_buttons_path_to_app_${index}`, snapshot.storeSupernavButtons[index].path_to_app),
+			});
 		}
+		result['store_supernav_buttons'] = result_store_supernav_buttons;
+
+		let result_app_page_buttons: AppPageButtonSetting[] = [];
+		for (let index = 0; index < snapshot.appPageButtons.length; index++) {
+			result_app_page_buttons.push({
+				name: getTextFieldValue(`app_page_buttons_name_${index}`, snapshot.appPageButtons[index].name),
+				icon: getTextFieldValue(`app_page_buttons_icon_${index}`, snapshot.appPageButtons[index].icon),
+				format_game_name: snapshot.appPageButtons[index].format_game_name,
+				path_to_app: getTextFieldValue(`app_page_buttons_path_to_app_${index}`, snapshot.appPageButtons[index].path_to_app),
+			});
+		}
+		result['app_page_buttons'] = result_app_page_buttons;
+
+		result['top_buttons_style'] = getTextAreaValue('TopButtonsStyleInput', snapshot.topButtonsStyle);
 
 		const jsonString = JSON.stringify(result);
-		SyncLog("Settings Saved");
+		SyncLog('Settings Saved');
 		SyncLog(jsonString);
 
 		saveSettings({ ...getSettings(), settings_json: jsonString });
@@ -1399,18 +1468,10 @@ async function SaveSettings(setInfoMessage: Function){
 		RespawnStoreSupernavButtons();
 
 		await sleep(500);
-		setInfoMessage("Success!");
-	}
-	catch (error) {
+		setInfoMessage('Success!');
+	} catch (error) {
 		setInfoMessage(error);
 	}
-}
-
-function DeleteObject(id: string){
-    const element = popup_desktop.m_popup.document.getElementById(id);
-    if (element) {
-        element.remove();
-    }
 }
 
 //#endregion
@@ -1427,3 +1488,4 @@ export default definePlugin(() => {
 		content: <SettingsContent />,
 	};
 });
+
