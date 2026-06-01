@@ -512,7 +512,7 @@ async function SubscribeOnMutations(popup: any) {
 					for (const el of draggables) {
 						const rect = el.getBoundingClientRect();
 						if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-							window.lastClickedElement = el.children[1].innerText;
+							window.lastClickedElement = el.querySelector('span')?.innerText ?? 'name not found';
 						}
 					}
 				} catch (error) {}
