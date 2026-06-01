@@ -1,5 +1,6 @@
-import { Millennium, IconsModule, definePlugin, callable, PanelSection, TextField, Toggle, Field } from '@steambrew/client';
+import { Millennium, IconsModule, definePlugin, callable, PanelSection, TextField, Toggle, Field, DropdownItem } from '@steambrew/client';
 import { getSettings, saveSettings } from './services/settings';
+import { Localize, GetLanguageOptions } from './services/localization';
 import { useState, useEffect } from 'react';
 
 const WaitForElement = async (sel: string, parent = document) => [...(await Millennium.findElement(parent, sel))][0];
@@ -10,17 +11,6 @@ const run_command = callable<[{ text: string }], string>('run_command');
 
 const GAME_NAME_PARAMETER = "%GAME_NAME%";
 const YELLOW_HIGHLIGHT_COLOR = "#ffcc32";
-
-const GAME_NAME_PARAMETER_TIP = 'For button sections marked with * sign, the ' + GAME_NAME_PARAMETER + ' parameter can be used in the button name and URL. It will be replaced to the name of the game for which the button was called. For example: https://www.google.com/search?q=' + GAME_NAME_PARAMETER + ' → https://www.google.com/search?q=Subnautica';
-const BUTTON_NAME_TIP = "The name that will be displayed on the button";
-const BUTTON_SHOW_NAME_TIP = "Should the button's name be shown on it?";
-const BUTTON_ICON_TIP = "URL of the icon that will be displayed on the button";
-const BUTTON_SHOW_ICON_TIP = "Should the button's icon be shown on it?";
-const BUTTON_PATH_TO_APP_TIP = "The URL or App Path (e.g., https://www.example.com or C:\\Program Files\\App\\app.exe) to open when the button is clicked";
-const BUTTON_FORMAT_GAME_NAME_TIP = "Does the game name need to be formatted when it is inserted into a parameter " + GAME_NAME_PARAMETER + ". Formatting replaces spaces and slashes with + signs, which is convenient for opening URLs in a browser.";
-const BUTTON_ADD_ARROW_ICON_TIP = "Whether to add an arrow icon to the button";
-
-const DROPDOWN_MENU_SETTINGS = "Dropdown Menu Settings";
 
 let __idCounter = 0;
 
@@ -652,6 +642,7 @@ async function OnPopupCreation(popup: any) {
 	};
 
 	type SaveSnapshot = {
+		language: string;
 		topButtons: TopButtonSetting[];
 		rightClickButtons: GenericButtonSetting[];
 		dropDownItems: GenericButtonSetting[];
@@ -792,6 +783,8 @@ async function OnPopupCreation(popup: any) {
 	const SettingsContent = () => {
 		const initialSettings = global_object_settings as any;
 		const [infoMessage, setInfoMessage] = useState('');
+		const [infoMessageColor, setInfoMessageColor] = useState('red');
+	  	const [language, setLanguage] = useState(getSettings().language ?? 'English');
 		const [topButtons, setTopButtons] = useState<TopButtonSetting[]>(() => [...(initialSettings.top_buttons ?? [])]);
 		const [rightClickButtons, setRightClickButtons] = useState<GenericButtonSetting[]>(() => [...(initialSettings.right_click_on_game_context_menu_buttons ?? [])]);
 		const [dropDownItems, setDropDownItems] = useState<GenericButtonSetting[]>(() => [...(initialSettings.right_click_on_game_context_menu_buttons_drop_down?.items ?? [])]);
@@ -801,6 +794,23 @@ async function OnPopupCreation(popup: any) {
 		const [dropDownName, setDropDownName] = useState(initialSettings.right_click_on_game_context_menu_buttons_drop_down?.name ?? 'Additional');
 		const [dropDownAppendAfter, setDropDownAppendAfter] = useState(initialSettings.right_click_on_game_context_menu_buttons_drop_down?.append_after_element_number ?? '1');
 		const [topButtonsStyle, setTopButtonsStyle] = useState(initialSettings.top_buttons_style ?? '');
+
+		const languageOptions = GetLanguageOptions();
+		const selectedlanguageOption =
+			languageOptions.find((option) => option.data === language) ?? languageOptions[0];
+
+		const replaceGameNameParameter = (text: string) =>
+			text.split('%GAME_NAME%').join(GAME_NAME_PARAMETER);
+
+		const GAME_NAME_PARAMETER_TIP = replaceGameNameParameter(Localize(language, 'GameNameParameterTip'));
+		const BUTTON_NAME_TIP = Localize(language, 'ButtonNameTip');
+		const BUTTON_SHOW_NAME_TIP = Localize(language, 'ButtonShowNameTip');
+		const BUTTON_ICON_TIP = Localize(language, 'ButtonIconTip');
+		const BUTTON_SHOW_ICON_TIP = Localize(language, 'ButtonShowIconTip');
+		const BUTTON_PATH_TO_APP_TIP = Localize(language, 'ButtonPathToAppTip');
+		const BUTTON_FORMAT_GAME_NAME_TIP = replaceGameNameParameter(Localize(language, 'ButtonFormatGameNameTip'));
+		const BUTTON_ADD_ARROW_ICON_TIP = Localize(language, 'ButtonAddArrowIconTip');
+		const DROPDOWN_MENU_SETTINGS = Localize(language, 'DropdownMenuSettings');
 
 		const preserveStaticFields = () => {
 			setDropDownName(getTextFieldValue('drop_down_name_field', dropDownName));
@@ -892,9 +902,22 @@ async function OnPopupCreation(popup: any) {
 
 		return (
 			<>
+				<PanelSection title={Localize(language, 'LanguageOfPlugin')}>
+					<DropdownItem
+						label={selectedlanguageOption.label}
+						bottomSeparator="standard"
+						rgOptions={languageOptions}
+						selectedOption={selectedlanguageOption}
+						menuLabel={selectedlanguageOption.label}
+						strDefaultLabel={selectedlanguageOption.label}
+						onChange={(selected) => setLanguage(String(selected.data))}
+					/>
+				</PanelSection>
+
 				<button
 					onClick={() => {
-						SaveSettings(setInfoMessage, {
+						SaveSettings(setInfoMessage, setInfoMessageColor, {
+							language: language,
 							topButtons: topButtons,
 							rightClickButtons: rightClickButtons,
 							dropDownItems: dropDownItems,
@@ -906,10 +929,9 @@ async function OnPopupCreation(popup: any) {
 							topButtonsStyle: topButtonsStyle,
 						});
 					}}
-					title="Save settings"
 					style={{ marginTop: '6px', backgroundColor: '#8FFF83', border: '0px', borderRadius: '2px', width: '100%', height: '50px', cursor: 'pointer', fontSize: '23px', color: '#000' }}
 				>
-					Save settings
+					{Localize(language, 'SaveSettings')}
 				</button>
 
 				{infoMessage != '' && (
@@ -923,7 +945,7 @@ async function OnPopupCreation(popup: any) {
 								fontSize: '23px',
 								color: '#000',
 								alignContent: 'center',
-								backgroundColor: infoMessage == 'Success!' ? '#8FFF83' : '#ff8e8e',
+								backgroundColor: infoMessageColor == 'green' ? '#8FFF83' : '#ff8e8e',
 							}}
 						>
 							{infoMessage}
@@ -938,14 +960,14 @@ async function OnPopupCreation(popup: any) {
 
 				<div style={{ backgroundColor: "rgba(255, 202, 0, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
 					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Right click on game context menu buttons <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>{Localize(language, 'Right click on game context menu buttons')} <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
 						<button
 							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
 							onClick={() => {
 								preserveStaticFields();
 								setRightClickButtons([...readRightClickButtonsFromDom(), createDefaultGenericButton()]);
 							}}
-							title="Add right click on game context menu button"
+							title={Localize(language, 'Add right click on game context menu button')}
 						>
 							+
 						</button>
@@ -953,13 +975,13 @@ async function OnPopupCreation(popup: any) {
 
 					{rightClickButtons.map((item, index) => (
 						<div key={`right-click-${index}`} style={buttonBackgroundStyle}>
-							<div style={{ textAlign: 'center' }} title="Right click on game context menu buttons">Button Number: {index + 1}</div>
+							<div style={{ textAlign: 'center' }} title={Localize(language, 'Right click on game context menu buttons')}>{Localize(language, 'Button Number')}: {index + 1}</div>
 							<div id={`right_click_on_game_context_menu_buttons_name_${index}`}>
-								<TextField label="Name" description={BUTTON_NAME_TIP} />
+								<TextField label={Localize(language, 'Name')} description={BUTTON_NAME_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`right_click_on_game_context_menu_buttons_format_game_name_${index}`} title={BUTTON_FORMAT_GAME_NAME_TIP}>
-								<Field label="Format game name">
+								<Field label={Localize(language, 'FormatGameName')}>
 									<Toggle
 										value={item.format_game_name === 'true'}
 										onChange={(checked) => {
@@ -970,7 +992,7 @@ async function OnPopupCreation(popup: any) {
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`right_click_on_game_context_menu_buttons_add_arrow_icon_${index}`} title={BUTTON_ADD_ARROW_ICON_TIP}>
-								<Field label="Add arrow icon">
+								<Field label={Localize(language, 'AddArrowIcon')}>
 									<Toggle
 										value={item.add_arrow_icon === 'true'}
 										onChange={(checked) => {
@@ -981,7 +1003,7 @@ async function OnPopupCreation(popup: any) {
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`right_click_on_game_context_menu_buttons_path_to_app_${index}`}>
-								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+								<TextField label={Localize(language, 'URL or App Path')} description={BUTTON_PATH_TO_APP_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div style={{ textAlign: 'center' }}>
@@ -994,7 +1016,7 @@ async function OnPopupCreation(popup: any) {
 										setRightClickButtons(current);
 									}}
 								>
-									delete this button
+									{Localize(language, 'delete this button')}
 								</button>
 							</div>
 						</div>
@@ -1008,14 +1030,14 @@ async function OnPopupCreation(popup: any) {
 
 				<div style={{ backgroundColor: "rgba(255, 0, 0, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
 					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Right click on game context menu buttons in drop down <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>{Localize(language, 'Right click on game context menu buttons in drop down')} <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
 						<button
 							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
 							onClick={() => {
 								preserveStaticFields();
 								setDropDownItems([...readDropDownItemsFromDom(), createDefaultGenericButton()]);
 							}}
-							title="Add right click on game context menu button in drop down"
+							title={Localize(language, 'Add right click on game context menu button in drop down')}
 						>
 							+
 						</button>
@@ -1023,13 +1045,13 @@ async function OnPopupCreation(popup: any) {
 
 					{dropDownItems.map((item, index) => (
 						<div key={`drop-down-${index}`} style={buttonBackgroundStyle}>
-							<div style={{ textAlign: 'center' }} title="Right click on game context menu buttons in drop down">Button Number: {index + 1}</div>
+							<div style={{ textAlign: 'center' }} title={Localize(language, 'Right click on game context menu buttons in drop down')}>{Localize(language, 'Button Number')}: {index + 1}</div>
 							<div id={`right_click_on_game_context_menu_buttons_drop_down_name_${index}`}>
-								<TextField label="Name" description={BUTTON_NAME_TIP} />
+								<TextField label={Localize(language, 'Name')} description={BUTTON_NAME_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`right_click_on_game_context_menu_buttons_drop_down_format_game_name_${index}`} title={BUTTON_FORMAT_GAME_NAME_TIP}>
-								<Field label="Format game name">
+								<Field label={Localize(language, 'FormatGameName')}>
 									<Toggle
 										value={item.format_game_name === 'true'}
 										onChange={(checked) => {
@@ -1040,7 +1062,7 @@ async function OnPopupCreation(popup: any) {
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`right_click_on_game_context_menu_buttons_drop_down_add_arrow_icon_${index}`} title={BUTTON_ADD_ARROW_ICON_TIP}>							
-								<Field label="Add arrow icon">
+								<Field label={Localize(language, 'AddArrowIcon')}>
 									<Toggle
 										value={item.add_arrow_icon === 'true'}
 										onChange={(checked) => {
@@ -1051,7 +1073,7 @@ async function OnPopupCreation(popup: any) {
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`right_click_on_game_context_menu_buttons_drop_down_path_to_app_${index}`}>
-								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+								<TextField label={Localize(language, 'URL or App Path')} description={BUTTON_PATH_TO_APP_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div style={{ textAlign: 'center' }}>
@@ -1064,7 +1086,7 @@ async function OnPopupCreation(popup: any) {
 										setDropDownItems(current);
 									}}
 								>
-									delete this button
+									{Localize(language, 'delete this button')}
 								</button>
 							</div>
 						</div>
@@ -1072,12 +1094,12 @@ async function OnPopupCreation(popup: any) {
 
 					<PanelSection title={DROPDOWN_MENU_SETTINGS}>
 						<div id="drop_down_name_field">
-							<TextField label="Name" description="Name for the drop-down menu section" />
+							<TextField label={Localize(language, 'Name')} description={Localize(language, "Name for the drop-down menu section")} />
 						</div>
 						<div id="drop_down_append_after_field">
 							<TextField
-								label="Append after"
-								description="After which element should the menu be inserted"
+								label={Localize(language, 'Append after')}
+								description={Localize(language, "After which element should the menu be inserted")}
 								mustBeNumeric={true}
 								rangeMin={1}
 								rangeMax={7}
@@ -1093,14 +1115,14 @@ async function OnPopupCreation(popup: any) {
 
 				<div style={{ backgroundColor: "rgba(61, 255, 0, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
 					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>Game properties menu buttons <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>{Localize(language, 'Game properties menu buttons')} <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
 						<button
 							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
 							onClick={() => {
 								preserveStaticFields();
 								setGamePropertiesButtons([...readGamePropertiesButtonsFromDom(), createDefaultGenericButton()]);
 							}}
-							title="Add game properties menu buttons"
+							title={Localize(language, 'Add game properties menu buttons')}
 						>
 							+
 						</button>
@@ -1108,13 +1130,13 @@ async function OnPopupCreation(popup: any) {
 
 					{gamePropertiesButtons.map((item, index) => (
 						<div key={`game-properties-${index}`} style={buttonBackgroundStyle}>
-							<div style={{ textAlign: 'center' }} title="Game properties menu buttons">Button Number: {index + 1}</div>
+							<div style={{ textAlign: 'center' }} title={Localize(language, 'Game properties menu buttons')}>{Localize(language, 'Button Number')}: {index + 1}</div>
 							<div id={`game_properties_menu_buttons_name_${index}`}>
-								<TextField label="Name" description={BUTTON_NAME_TIP} />
+								<TextField label={Localize(language, 'Name')} description={BUTTON_NAME_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`game_properties_menu_buttons_format_game_name_${index}`} title={BUTTON_FORMAT_GAME_NAME_TIP}>
-								<Field label="Format game name">
+								<Field label={Localize(language, 'FormatGameName')}>
 									<Toggle
 										value={item.format_game_name === 'true'}
 										onChange={(checked) => {
@@ -1125,7 +1147,7 @@ async function OnPopupCreation(popup: any) {
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`game_properties_menu_buttons_add_arrow_icon_${index}`} title={BUTTON_ADD_ARROW_ICON_TIP}>
-								<Field label="Add arrow icon">
+								<Field label={Localize(language, 'AddArrowIcon')}>
 									<Toggle
 										value={item.add_arrow_icon === 'true'}
 										onChange={(checked) => {
@@ -1136,7 +1158,7 @@ async function OnPopupCreation(popup: any) {
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`game_properties_menu_buttons_path_to_app_${index}`}>
-								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+								<TextField label={Localize(language, 'URL or App Path')} description={BUTTON_PATH_TO_APP_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div style={{ textAlign: 'center' }}>
@@ -1149,7 +1171,7 @@ async function OnPopupCreation(popup: any) {
 										setGamePropertiesButtons(current);
 									}}
 								>
-									delete this button
+									{Localize(language, 'delete this button')}
 								</button>
 							</div>
 						</div>
@@ -1163,14 +1185,14 @@ async function OnPopupCreation(popup: any) {
 
 				<div style={{ backgroundColor: "rgba(0, 255, 202, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
 					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-						<h3 style={{ margin: 0 }}>Top Buttons</h3>
+						<h3 style={{ margin: 0 }}>{Localize(language, 'Top Buttons')}</h3>
 						<button
 							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
 							onClick={() => {
 								preserveStaticFields();
 								setTopButtons([...readTopButtonsFromDom(), createDefaultTopButton()]);
 							}}
-							title="Add top button"
+							title={Localize(language, 'Add top button')}
 						>
 							+
 						</button>
@@ -1178,13 +1200,13 @@ async function OnPopupCreation(popup: any) {
 
 					{topButtons.map((item, index) => (
 						<div key={`top-buttons-${index}`} style={buttonBackgroundStyle}>
-							<div style={{ textAlign: 'center' }} title="Top buttons">Button Number: {index + 1}</div>
+							<div style={{ textAlign: 'center' }} title={Localize(language, 'Top Buttons')}>{Localize(language, 'Button Number')}: {index + 1}</div>
 							<div id={`top_buttons_name_${index}`}>
-								<TextField label="Name" description={BUTTON_NAME_TIP} />
+								<TextField label={Localize(language, 'Name')} description={BUTTON_NAME_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`top_buttons_show_name_${index}`} title={BUTTON_SHOW_NAME_TIP}>
-								<Field label="Show name">
+								<Field label={Localize(language, 'Show name')}>
 									<Toggle
 										value={item.show_name === 'true'}
 										onChange={(checked) => {
@@ -1195,11 +1217,11 @@ async function OnPopupCreation(popup: any) {
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`top_buttons_icon_${index}`}>
-								<TextField label="Icon" description={BUTTON_ICON_TIP} />
+								<TextField label={Localize(language, 'Icon')} description={BUTTON_ICON_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`top_buttons_show_icon_${index}`} title={BUTTON_SHOW_ICON_TIP}>
-								<Field label="Show icon">
+								<Field label={Localize(language, 'Show icon')}>
 									<Toggle
 										value={item.show_icon === 'true'}
 										onChange={(checked) => {
@@ -1210,7 +1232,7 @@ async function OnPopupCreation(popup: any) {
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`top_buttons_path_to_app_${index}`}>
-								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+								<TextField label={Localize(language, 'URL or App Path')} description={BUTTON_PATH_TO_APP_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div style={{ textAlign: 'center' }}>
@@ -1223,7 +1245,7 @@ async function OnPopupCreation(popup: any) {
 										setTopButtons(current);
 									}}
 								>
-									delete this button
+									{Localize(language, 'delete this button')}
 								</button>
 							</div>
 						</div>
@@ -1237,14 +1259,14 @@ async function OnPopupCreation(popup: any) {
 
 				<div style={{ backgroundColor: "rgba(230, 0, 255, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
 					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-						<h3 style={{ margin: 0 }}>Store supernav buttons</h3>
+						<h3 style={{ margin: 0 }}>{Localize(language, 'Store supernav buttons')}</h3>
 						<button
 							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
 							onClick={() => {
 								preserveStaticFields();
 								setStoreSupernavButtons([...readStoreSupernavButtonsFromDom(), createDefaultStoreSupernavButton()]);
 							}}
-							title="Add store supernav buttons"
+							title={Localize(language, 'Add store supernav buttons')}
 						>
 							+
 						</button>
@@ -1252,13 +1274,13 @@ async function OnPopupCreation(popup: any) {
 
 					{storeSupernavButtons.map((item, index) => (
 						<div key={`store-supernav-${index}`} style={buttonBackgroundStyle}>
-							<div style={{ textAlign: 'center' }} title="Store supernav buttons">Button Number: {index + 1}</div>
+							<div style={{ textAlign: 'center' }} title={Localize(language, 'Store supernav buttons')}>{Localize(language, 'Button Number')}: {index + 1}</div>
 							<div id={`store_supernav_buttons_name_${index}`}>
-								<TextField label="Name" description={BUTTON_NAME_TIP} />
+								<TextField label={Localize(language, 'Name')} description={BUTTON_NAME_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`store_supernav_buttons_add_arrow_icon_${index}`} title={BUTTON_ADD_ARROW_ICON_TIP}>
-								<Field label="Add arrow icon">
+								<Field label={Localize(language, 'AddArrowIcon')}>
 									<Toggle
 										value={item.add_arrow_icon === 'true'}
 										onChange={(checked) => {
@@ -1269,7 +1291,7 @@ async function OnPopupCreation(popup: any) {
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`store_supernav_buttons_path_to_app_${index}`}>
-								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+								<TextField label={Localize(language, 'URL or App Path')} description={BUTTON_PATH_TO_APP_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div style={{ textAlign: 'center' }}>
@@ -1282,7 +1304,7 @@ async function OnPopupCreation(popup: any) {
 										setStoreSupernavButtons(current);
 									}}
 								>
-									delete this button
+									{Localize(language, 'delete this button')}
 								</button>
 							</div>
 						</div>
@@ -1296,14 +1318,14 @@ async function OnPopupCreation(popup: any) {
 
 				<div style={{ backgroundColor: "rgba(0, 123, 255, 0.05)", padding: '0px 5px', borderRadius: '8px' }}>
 					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>App page Buttons <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
+						<h3 style={{ margin: 0 }} title={GAME_NAME_PARAMETER_TIP}>{Localize(language, 'App page Buttons')} <span style={{ color: YELLOW_HIGHLIGHT_COLOR }}>*</span></h3>
 						<button
 							style={{ backgroundColor: '#d29cffff', cursor: 'pointer', borderRadius: '10px', scale: '1.4', marginBottom: '10px' }}
 							onClick={() => {
 								preserveStaticFields();
 								setAppPageButtons([...readAppPageButtonsFromDom(), createDefaultAppPageButton()]);
 							}}
-							title="Add app page button"
+							title={Localize(language, 'Add app page button')}
 						>
 							+
 						</button>
@@ -1311,17 +1333,17 @@ async function OnPopupCreation(popup: any) {
 
 					{appPageButtons.map((item, index) => (
 						<div key={`app-page-${index}`} style={buttonBackgroundStyle}>
-							<div style={{ textAlign: 'center' }} title="App page buttons">Button Number: {index + 1}</div>
+							<div style={{ textAlign: 'center' }} title={Localize(language, 'App page Buttons')}>{Localize(language, 'Button Number')}: {index + 1}</div>
 							<div id={`app_page_buttons_name_${index}`}>
-								<TextField label="Name" description={BUTTON_NAME_TIP} />
+								<TextField label={Localize(language, 'Name')} description={BUTTON_NAME_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`app_page_buttons_icon_${index}`}>
-								<TextField label="Icon" description={BUTTON_ICON_TIP} />
+								<TextField label={Localize(language, 'Icon')} description={BUTTON_ICON_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`app_page_buttons_format_game_name_${index}`} title={BUTTON_FORMAT_GAME_NAME_TIP}>
-								<Field label="Format game name">
+								<Field label={Localize(language, 'FormatGameName')}>
 									<Toggle
 										value={item.format_game_name === 'true'}
 										onChange={(checked) => {
@@ -1332,7 +1354,7 @@ async function OnPopupCreation(popup: any) {
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div id={`app_page_buttons_path_to_app_${index}`}>
-								<TextField label="URL or App Path" description={BUTTON_PATH_TO_APP_TIP} />
+								<TextField label={Localize(language, 'URL or App Path')} description={BUTTON_PATH_TO_APP_TIP} />
 							</div>
 							<div style={{ minHeight: '2px', backgroundColor: '#4a545d', margin: '3px 0px', borderRadius: '5px' }} />
 							<div style={{ textAlign: 'center' }}>
@@ -1345,7 +1367,7 @@ async function OnPopupCreation(popup: any) {
 										setAppPageButtons(current);
 									}}
 								>
-									delete this button
+									{Localize(language, 'delete this button')}
 								</button>
 							</div>
 						</div>
@@ -1357,8 +1379,10 @@ async function OnPopupCreation(popup: any) {
 				<br></br>
 				<br></br>
 
-				<h2 style={{ margin: '0px' }}>Top Buttons style</h2>
-				<p>CSS style for the top buttons. You can copy it to another editor, modify it as you wish, and paste it back here.</p>
+				<h2 style={{ margin: '0px' }}>{Localize(language, 'Top Buttons style')}</h2>
+				<p>
+					{Localize(language, 'Top Buttons style changer description')}
+				</p>
 				<textarea 
 					id="TopButtonsStyleInput" 
 					style={{ 
@@ -1377,8 +1401,9 @@ async function OnPopupCreation(popup: any) {
 		);
 	};
 
-async function SaveSettings(setInfoMessage: Function, snapshot: SaveSnapshot) {
+async function SaveSettings(setInfoMessage: Function, setInfoMessageColor: Function, snapshot: SaveSnapshot) {
 	setInfoMessage('');
+	setInfoMessageColor('green');
 
 	try {
 		SyncLog('Save Settings');
@@ -1462,14 +1487,16 @@ async function SaveSettings(setInfoMessage: Function, snapshot: SaveSnapshot) {
 		SyncLog('Settings Saved');
 		SyncLog(jsonString);
 
-		saveSettings({ ...getSettings(), settings_json: jsonString });
+		saveSettings({ ...getSettings(), language: snapshot.language, settings_json: jsonString });
 		global_object_settings = result;
 		RespawnTopButtons();
 		RespawnStoreSupernavButtons();
 
 		await sleep(500);
-		setInfoMessage('Success!');
+		setInfoMessageColor('green');
+		setInfoMessage(Localize(snapshot.language, 'SettingsSavedSuccessfully'));
 	} catch (error) {
+		setInfoMessageColor('red');
 		setInfoMessage(error);
 	}
 }

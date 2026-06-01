@@ -1,10 +1,12 @@
 export interface PluginSettings {
+  language: string;
   settings_json: string;
 }
 
 const STORAGE_KEY = 'Custom-buttons-settings';
 
 const DEFAULT_SETTINGS: PluginSettings = {
+  language: "English",
   settings_json: `{
       "top_buttons": [
         {
