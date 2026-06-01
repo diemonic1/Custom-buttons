@@ -259,7 +259,7 @@ function SpawnContextMenuButtons(popup: any, node: any, lastClickedElement: stri
 
 		let myListButton = element.cloneNode(true);
 
-		let myList = popup.m_popup.document.getElementById('apps_buttons_additional_drop_down_menu');
+		let myList = popup.m_popup.document.getElementById('custom_buttons_additional_drop_down_menu');
 
 		if (myList == null || myList == undefined) {
 			myList = node.cloneNode(true);
@@ -299,7 +299,7 @@ function SpawnContextMenuButtons(popup: any, node: any, lastClickedElement: stri
 			myList.style = 'visibility: hidden; display: none; top: 0px; left: 0px;';
 		});
 
-		myList.id = 'apps_buttons_additional_drop_down_menu';
+		myList.id = 'custom_buttons_additional_drop_down_menu';
 		myList.style = 'visibility: hidden; display: none; top: 0px; left: 0px;';
 
 		global_object_settings.right_click_on_game_context_menu_buttons_drop_down.items.forEach((app: string) => {
@@ -377,7 +377,7 @@ function SpawnAppPageButtons(elementsToSpawnAppPageButtons: any, lastClickedElem
 					clone.firstElementChild.appendChild(img);
 				}
 
-				clone.title = button_name + " 21";
+				clone.title = button_name;
 				clone.id = button_name + '_app_page_button';
 
 				parent2.parentElement.prepend(clone);
