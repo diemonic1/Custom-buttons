@@ -94,7 +94,7 @@ const LOCALIZATION = {
         "Add top button": "Добавить верхнюю кнопку",
         "Store supernav buttons": "Кнопки в меню 'Магазин' (Store supernav)",
         "Add store supernav buttons": "Добавить кнопку в меню 'Магазин' (Store supernav)",
-        "App page Buttons": "Кнопки на страницы игры",
+        "App page Buttons": "Кнопки на странице игры",
         "Add app page button": "Добавить кнопку на страницу игры"
       },
     "ChineseSimplified": {
