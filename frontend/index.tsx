@@ -24,7 +24,7 @@ export default definePlugin(() => {
 	const SettingsIcon = IconsModule?.Settings;
 
 	// The plugin loader shows the settings page only when the title, the icon and
-	// the content are all set, although the Plugin type has no title.
+	// the content are all set, although the Plugin type has no title
 	const plugin: Plugin & { title: string } = {
 		title: 'Custom Buttons',
 		icon: SettingsIcon ? <SettingsIcon /> : <></>,
