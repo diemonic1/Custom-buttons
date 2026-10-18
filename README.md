@@ -11,6 +11,9 @@ You can customize, delete, or add absolutely all buttons in each section as you 
 For button sections marked with * sign, the %GAME_NAME% parameter can be used in the button name and URL. It will be replaced to the name of the game for which the button was called. For example:
 https://www.google.com/search?q=%GAME_NAME% → https://www.google.com/search?q=Subnautica
 
+The %GAME_ID% parameter works the same way and is replaced with the Steam App ID of the game. For example:
+https://steamdb.info/app/%GAME_ID%/ → https://steamdb.info/app/1091500/
+
 # Right click on game context menu buttons *
 <img src="https://github.com/user-attachments/assets/68cbf1a3-1f9f-4a98-8f25-c221c0a187dc" />
 
@@ -29,5 +32,23 @@ https://www.google.com/search?q=%GAME_NAME% → https://www.google.com/search?q=
 # Apps page buttons *
 <img src="https://github.com/user-attachments/assets/532d066e-f18c-4615-afd0-fd2e45d04517" />
 
+# Changing the look of the top buttons
+The top buttons use these classes, so their style can be changed with Millennium QuickCSS:
+
+```css
+.millennium-custom-buttons { }                  /* the button */
+.millennium-custom-buttons:hover { }
+.millennium-custom-buttons-inner-div { }        /* the content of the button */
+.millennium-custom-buttons-img { }              /* the icon */
+.millennium-custom-buttons-text-with-margin { } /* the name next to the icon */
+```
+
 ## Prerequisites
-- [Millennium](https://steambrew.app/)
+- [Millennium](https://steambrew.app/) v3.4.0 or newer
+
+## Building
+```bash
+pnpm install
+pnpm run build
+```
+`pnpm run typecheck` checks the TypeScript code.

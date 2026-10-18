@@ -1,0 +1,25 @@
+[plugin]
+id = "Custom-buttons"
+name = "Custom Buttons"
+version = "1.1.0"
+author = "diemonic1"
+description = "A plugin for adding custom buttons that allow you to open URL directly from the Steam client"
+
+[backend]
+entry = "backend/main.lua"
+sources = ["backend/**/*.lua"]
+
+[frontend]
+entry = "frontend/index.tsx"
+
+[compiler]
+output_path = "auto"
+
+[dev]
+auto_restart = true
+reload_steamui_when = "both"
+
+[logger]
+padding = 0
+backend_prefix  = "BCK"
+frontend_prefix = "FRT"

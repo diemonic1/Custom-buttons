@@ -1,88 +1,96 @@
-local logger = require("logger")
 local millennium = require("millennium")
-local utils = require("utils")
-local http = require("http")
 
--- ====== HTTP ======
+require("rpc_functions")
 
--- The default Lua-HTTP user agent gets served inconsistently, so a browser one
--- is used here - same approach as in the RSS-feed-in-whats-new plugin.
-local REQUEST_OPTIONS = {
-    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    headers = {
-        ["Accept"] = "application/json, text/plain, */*"
+-- All the buttons are injected by patching Steam's own UI code (the Hooking API),
+-- so Steam renders them itself instead of the plugin cloning DOM nodes.
+-- #{{self}} is the frontend module; every hook falls back to Steam's original
+-- behaviour when the frontend is not loaded. If Steam changes the code and a
+-- pattern stops matching, only that one place is left without buttons.
+local STEAM_UI_FILE = [[sp\.js]]
+
+local patches = {
+    -- Main window title bar: the buttons go first in the row of title bar controls.
+    {
+        file = STEAM_UI_FILE,
+        find = [=[TitleBarControls,[\w$]+\),\.\.\.[\w$]+,children:\(0,[\w$]+\.jsxs\)\([\w$]+\.[\w$]+,\{children:\[]=],
+        transforms = {
+            {
+                match = [=[children:\(0,([\w$]+)\.jsxs\)\(([\w$]+\.[\w$]+),\{children:\[]=],
+                replace = [=[children:(0,\1.jsxs)(\2,{children:[(0,\1.jsx)(#{{self}}?.hooks?.TopButtons||(()=>null),{}),]=],
+            },
+        },
     },
-    timeout = 5
+    -- Game context menu (library list and the gear button on the game page).
+    -- Its whole children array is passed through the frontend, which inserts
+    -- the buttons and the drop down submenu. Steam's own menu item component is
+    -- passed along with it, so the buttons are built from the same component.
+    {
+        file = STEAM_UI_FILE,
+        find = [=[render\(\)\{const [\w$]+=this\.GetTargetApps\(\).*?"#GameAction_GameProperties"\)\}\)\]\}\)\]\}\)\}]=],
+        transforms = {
+            {
+                match = [=[label:([\w$]+)\.length==1\?[\w$]+\[0\]\.display_name:null,children:\[]=],
+                replace = [=[label:\1.length==1?\1[0].display_name:null,children:(#{{self}}?.hooks?.contextMenu||((a,c)=>c))(\1,[]=],
+            },
+            {
+                match = [=[(\(0,[\w$]+\.jsx\)\(([\w$]+\.[\w$]+),\{onSelected:\(\)=>this\.props\.navigator\.AppProperties\([\w$]+\[0\]\.appid\),children:\(0,[\w$]+\.we\)\("#GameAction_GameProperties"\)\}\)\]\}\))\]\}\)\}]=],
+                replace = [=[\1],\2)})}]=],
+            },
+        },
+    },
+    -- The "Manage" submenu of the same context menu. Its component is handed to
+    -- the frontend, which builds the drop down submenu of the buttons from it.
+    {
+        file = STEAM_UI_FILE,
+        find = [=[return\(0,[\w$]+\.jsxs\)\([\w$]+\.[\w$]+,\{label:\(0,[\w$]+\.we\)\("#GameAction_Manage"\)]=],
+        transforms = {
+            {
+                match = [=[jsxs\)\(([\w$]+\.[\w$]+),\{label:]=],
+                replace = [=[jsxs)((#{{self}}?.hooks?.rememberSubmenu?.(\1),\1),{label:]=],
+            },
+        },
+    },
+    -- Game properties dialog: the buttons are appended to its list of pages.
+    {
+        file = STEAM_UI_FILE,
+        find = [=[title:[\w$]+\.display_name,pages:[\w$]+,showTitle]=],
+        transforms = {
+            {
+                match = [=[title:([\w$]+)\.display_name,pages:([\w$]+),]=],
+                replace = [=[title:\1.display_name,pages:(#{{self}}?.hooks?.propertiesPages||((o,p)=>p))(\1,\2),]=],
+            },
+        },
+    },
+    -- "Store" menu in the main window header: the buttons are appended to its items.
+    {
+        file = STEAM_UI_FILE,
+        find = [=[title:"Store Supernav",name:"#Menu_Store",[^\]]*?menuItems:\[[^\]]*\]]=],
+        transforms = {
+            {
+                match = [=[(menuItems:\[[^\]]*)\]]=],
+                replace = [=[\1,...(#{{self}}?.hooks?.storeItems?.()||[])]]=],
+            },
+        },
+    },
+    -- Game page: the buttons go first in the row with the gear, info and favourite buttons.
+    {
+        file = STEAM_UI_FILE,
+        find = [=[AppButtonsContainer,children:\[\(0,[\w$]+\.jsx\)]=],
+        transforms = {
+            {
+                match = [=[children:\[\(0,([\w$]+)\.jsx\)]=],
+                replace = [=[children:[(0,\1.jsx)(#{{self}}?.hooks?.AppPageButtons||(()=>null),{overview:this.props.overview}),(0,\1.jsx)]=],
+            },
+        },
+    },
 }
 
--- Returns the body only for successful responses, so callers never receive an
--- error page that would later fail JSON parsing.
-local function fetch(url)
-    local response, err = http.request(url, REQUEST_OPTIONS)
-
-    if not response then
-        logger:error("[Custom-buttons] request failed for " .. tostring(url) .. ": " .. tostring(err))
-        return nil
-    end
-
-    if response.status < 200 or response.status >= 300 then
-        logger:error("[Custom-buttons] request for " .. tostring(url) .. " returned status " .. tostring(response.status))
-        return nil
-    end
-
-    return response.body
-end
-
--- ====== BACKEND API ======
-
--- The frontend runs in a CEF context whose origin steamcommunity.com does not
--- allow, so requests to it are blocked by CORS there and have to go through the
--- backend instead.
-function get_url_data(url)
-    if not string.find(url, "http", 1, true) then
-        return nil
-    end
-
-    return fetch(url)
-end
-
-function print_log(text)
-    logger:info("[Custom-buttons] " .. tostring(text));
-    return "[Custom-buttons] " .. tostring(text);
-end
-
-function print_error(text)
-    logger:error("[Custom-buttons] " .. tostring(text));
-    return "[Custom-buttons] " .. tostring(text);
-end
-
--- ====== PLUGIN LIFECYCLE ======
-
-function run_command(text)
-    logger:info("[Custom-buttons] run command in background: " .. tostring(text));
-    local output, status = utils.exec('start "" "' .. tostring(text) .. '"')
-    return "[Custom-buttons] " .. tostring(status);
-end
-
 local function on_load()
-    logger:info("Comparing millennium version: " .. millennium.cmp_version(millennium.version(), "2.29.3"))
-    logger:info("Custom Buttons plugin loaded with Millennium version " .. millennium.version())
-
-    logger:info("Plugin base dir: " .. millennium.get_install_path())
-
     millennium.ready()
 end
 
-local function on_unload()
-    logger:info("Plugin Custom Buttons unloaded")
-end
-
-local function on_frontend_loaded()
-    logger:info("Frontend Custom Buttons loaded")
-end
-
 return {
-    on_frontend_loaded = on_frontend_loaded,
     on_load = on_load,
-    on_unload = on_unload
+    patches = patches,
 }

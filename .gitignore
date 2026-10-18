@@ -1,2 +1,4 @@
-.millennium/
 node_modules/
+/.millennium
+/dist
+.millennium/lsp/
